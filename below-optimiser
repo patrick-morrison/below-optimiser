@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+# Below Optimiser v1.0.0 - GLB optimization toolkit
+# Copyright (C) 2025 Patrick Morrison
+# Released: January 2025
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+set -euo pipefail
+
+usage() {
+    echo "Below Optimiser v1.0.0 - GLB optimization toolkit"
+    echo "Copyright (C) 2025 Patrick Morrison"
+    echo
+    echo "Usage:"
+    echo "  $0 pack <input> [output.glb]       # Pack & optimize for Quest"
+    echo "  $0 unpack <input.glb> [output-dir] # Extract textures for editing"
+    echo
+    echo "Examples:"
+    echo "  $0 pack model.glb                  # Optimize existing GLB"
+    echo "  $0 pack textures/                  # Pack directory to GLB"
+    echo "  $0 unpack model.glb"
+    echo
+    echo "For detailed documentation: https://github.com/patrickmorrison/belowoptimiser"
+    exit 0
+}
+
+# Check dependencies
+if ! command -v gltf-transform >/dev/null 2>&1; then
+    echo "Error: gltf-transform CLI not found"
+    echo "Install with: npm install -g @gltf-transform/cli"
+    exit 1
+fi
+
+
+extract_textures() {
+    local IN_GLB="$1"
+    local ROOT=$(dirname "$(cd "$(dirname "$IN_GLB")" && pwd)/$(basename "$IN_GLB")")
+    local BASE=$(basename "$IN_GLB" .glb)
+    local OUT_DIR="${2:-$ROOT/${BASE}_edit}"
+    
+    # Find unique directory name
+    local n=""
+    local try="$OUT_DIR"
+    while [[ -e "$try" ]]; do 
+        n=$((n+1))
+        try="${OUT_DIR%_edit*}_edit$n"
+    done
+    OUT_DIR="$try"
+    
+    local TMP=$(mktemp -d)
+    gltf-transform ktxdecompress "$IN_GLB" "$TMP/tmp.glb" 2>/dev/null || cp "$IN_GLB" "$TMP/tmp.glb"
+    mkdir "$OUT_DIR"
+    gltf-transform copy "$TMP/tmp.glb" "$OUT_DIR/$BASE.gltf"
+    
+    
+    echo "Textures extracted to: $OUT_DIR/"
+    rm -rf "$TMP"
+}
+
+pack_optimize() {
+    local INPUT="$1"
+    local OUTPUT="$2"
+    local TEMP="${OUTPUT%.glb}-temp.glb"
+    
+    echo "Optimizing for Quest..."
+    
+    # Handle directory input (GLTF + textures)
+    if [ -d "$INPUT" ]; then
+        local BASE=$(basename "$INPUT" _edit)
+        local GLTF_FILE="$INPUT/$BASE.gltf"
+        
+        if [ ! -f "$GLTF_FILE" ]; then
+            echo "Error: No .gltf file found: $GLTF_FILE"
+            exit 1
+        fi
+        
+        # Smart texture format detection and analysis
+        local has_jpeg=false
+        local has_jpg=false
+        local has_png=false
+        local has_normal_maps=false
+        
+        ls "$INPUT"/*.[jJ][pP][eE][gG] >/dev/null 2>&1 && has_jpeg=true
+        ls "$INPUT"/*.[jJ][pP][gG] >/dev/null 2>&1 && has_jpg=true
+        ls "$INPUT"/*.[pP][nN][gG] >/dev/null 2>&1 && has_png=true
+        
+        # Check for normal maps with pattern *normal[0-9]*
+        local normal_map_files=()
+        for file in "$INPUT"/*normal[0-9]*.*; do
+            if [ -f "$file" ]; then
+                normal_map_files+=("$(basename "$file")")
+                has_normal_maps=true
+            fi
+        done
+        
+        if $has_normal_maps; then
+            echo "Normal maps detected: ${normal_map_files[*]}"
+        fi
+        
+        if ($has_jpeg || $has_jpg) && ! $has_png; then
+            # Only JPEG/JPG files, no PNG files
+            if grep -qi '\.png"' "$GLTF_FILE" 2>/dev/null; then
+                if $has_jpeg; then
+                    echo "Fixing GLTF references: PNG to JPEG"
+                    sed -i.bak -e 's|\.png"|.jpeg"|gi' -e 's|\.PNG"|.jpeg"|g' -e 's|image/png|image/jpeg|gi' "$GLTF_FILE" && rm "$GLTF_FILE.bak"
+                else
+                    echo "Fixing GLTF references: PNG to JPG"
+                    sed -i.bak -e 's|\.png"|.jpg"|gi' -e 's|\.PNG"|.jpg"|g' -e 's|image/png|image/jpeg|gi' "$GLTF_FILE" && rm "$GLTF_FILE.bak"
+                fi
+            elif grep -qi '\.jpg"' "$GLTF_FILE" 2>/dev/null && $has_jpeg; then
+                echo "Fixing GLTF references: JPG to JPEG"
+                sed -i.bak -e 's|\.jpg"|.jpeg"|gi' -e 's|\.JPG"|.jpeg"|g' "$GLTF_FILE" && rm "$GLTF_FILE.bak"
+            elif grep -qi '\.jpeg"' "$GLTF_FILE" 2>/dev/null && $has_jpg; then
+                echo "Fixing GLTF references: JPEG to JPG"
+                sed -i.bak -e 's|\.jpeg"|.jpg"|gi' -e 's|\.JPEG"|.jpg"|g' "$GLTF_FILE" && rm "$GLTF_FILE.bak"
+            fi
+        fi
+        
+        # Validate and potentially auto-add normal maps to GLTF
+        if $has_normal_maps; then
+            local normal_files_in_gltf=0
+            local added_normal_maps=0
+            
+            # Check if normal maps are already referenced
+            for normal_file in "${normal_map_files[@]}"; do
+                if grep -q "\"$normal_file\"" "$GLTF_FILE" 2>/dev/null; then
+                    normal_files_in_gltf=$((normal_files_in_gltf + 1))
+                fi
+            done
+            
+            if [ $normal_files_in_gltf -gt 0 ]; then
+                echo "Confirmed $normal_files_in_gltf normal map(s) already referenced in GLTF"
+            else
+                echo "Normal maps found but not referenced in GLTF - adding to images array"
+                
+                # Add normal maps to GLTF images array so they get included in the GLB
+                for normal_file in "${normal_map_files[@]}"; do
+                    # Extract number from normal map filename (e.g., "Clipper_normal1.jpg" -> "1") 
+                    local number=$(echo "$normal_file" | grep -o 'normal[0-9]\+' | grep -o '[0-9]\+')
+                    
+                    if [ -n "$number" ]; then
+                        # Look for corresponding baseColor texture
+                        local base_pattern="baseColor_${number}"
+                        if grep -q "\"${base_pattern}" "$GLTF_FILE" 2>/dev/null; then
+                            echo "Including normal map $normal_file (for material $number)"
+                            
+                            # Determine correct MIME type
+                            local normal_extension="${normal_file##*.}"
+                            local mime_type="image/jpeg"
+                            if [[ "$normal_extension" == "png" || "$normal_extension" == "PNG" ]]; then
+                                mime_type="image/png"
+                            fi
+                            
+                            # Add normal map to images array by inserting before the closing bracket
+                            sed -i.bak '/^  "images": \[/,/^  \]/ {
+                                /^  \]/ i\
+    ,\
+    {\
+      "mimeType": "'$mime_type'",\
+      "uri": "'$normal_file'"\
+    }
+                            }' "$GLTF_FILE" && rm "$GLTF_FILE.bak"
+                            
+                            added_normal_maps=$((added_normal_maps + 1))
+                        fi
+                    fi
+                done
+                
+                if [ $added_normal_maps -gt 0 ]; then
+                    echo "Added $added_normal_maps normal map(s) to GLTF - will be included in GLB"
+                    echo "Note: Normal maps added as images but not linked to materials (manual linking required)"
+                else
+                    echo "Warning: Could not add normal maps to GLTF"
+                fi
+            fi
+        fi
+        
+        echo "Packing directory to GLB..."
+        gltf-transform copy "$GLTF_FILE" "$TEMP"
+    else
+        # Handle GLB input
+        cp "$INPUT" "$TEMP"
+    fi
+    
+    echo "Converting textures to KTX2..."
+    npx gltf-transform etc1s "$TEMP" "${TEMP%.glb}-ktx.glb" --quality 64
+    
+    echo "Applying 20-bit Draco compression..."
+    # 20-bit quantization prevents seams in multi-texture models
+    npx gltf-transform draco "${TEMP%.glb}-ktx.glb" "$OUTPUT" \
+        --method sequential \
+        --encode-speed 0 \
+        --decode-speed 0 \
+        --quantize-position 20 \
+        --quantize-normal 20 \
+        --quantize-color 20 \
+        --quantize-texcoord 20 \
+        --quantize-generic 20
+    
+    rm "$TEMP" "${TEMP%.glb}-ktx.glb"
+    echo "Quest-optimized GLB saved as: $OUTPUT"
+}
+
+
+# Parse command
+case "${1:-}" in
+    pack)
+        shift
+        [[ $# -lt 1 ]] && usage
+        INPUT="$1"
+        if [ -d "$INPUT" ]; then
+            BASE=$(basename "$INPUT" _edit)
+            OUTPUT="${2:-${BASE}-quest.glb}"
+        else
+            BASE=$(basename "$INPUT" .glb)
+            OUTPUT="${2:-${BASE}-quest.glb}"
+        fi
+        pack_optimize "$INPUT" "$OUTPUT"
+        ;;
+    unpack)
+        shift
+        [[ $# -lt 1 ]] && usage
+        extract_textures "$@"
+        ;;
+    *)
+        usage
+        ;;
+esac
