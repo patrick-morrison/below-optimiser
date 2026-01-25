@@ -11,26 +11,41 @@ See https://belowjs.com/guides/optimisation.html for complete workflow details.
 ## Quick Install
 
 ### Make executable
+```sh
 chmod +x below-optimiser
+```
 
 ### Install dependencies
+```sh
 npm install -g @gltf-transform/cli
+```
 
 ## Usage
 
 ### Basic optimisation - creates input-quest.glb
-  ./below-optimiser pack input.glb
+```sh
+./below-optimiser pack input.glb
+```
 
 ### Unpack for texture editing
+```sh
 ./below-optimiser unpack input.glb
+```
+
 ### Edit textures in input_edit/ folder
+```sh
 ./below-optimiser pack input_edit/
+```
 
 ### Batch a folder of models
+```sh
 ./below-optimiser pack models/*.glb
+```
 
 ### Skip polygon reduction
+```sh
 ./below-optimiser pack model.glb --no-simplify
+```
 
 ## Test Results
 
