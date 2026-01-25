@@ -4,6 +4,10 @@ compression and KTX2 texture compression. Reduces file sizes by ~30% and
 GPU memory usage by ~75% for smooth VR performance on Meta Quest
 headsets. For models over 1.2 million polygons, it also simplifies the mesh.
 
+Tested on macOS and Windows Subsystem for Linux (WSL).
+
+See https://belowjs.com/guides/optimisation.html for complete workflow details.
+
 ## Quick Install
 
 ### Make executable
@@ -12,37 +16,21 @@ chmod +x below-optimiser
 ### Install dependencies
 npm install -g @gltf-transform/cli
 
-Usage
+## Usage
 
-## Basic optimisation - creates input-quest.glb
+### Basic optimisation - creates input-quest.glb
   ./below-optimiser pack input.glb
 
-# Unpack for texture editing
+### Unpack for texture editing
 ./below-optimiser unpack input.glb
-# Edit textures in input_edit/ folder
+### Edit textures in input_edit/ folder
 ./below-optimiser pack input_edit/
 
-# Batch a folder of models
+### Batch a folder of models
 ./below-optimiser pack models/*.glb
 
-# Skip polygon reduction
+### Skip polygon reduction
 ./below-optimiser pack model.glb --no-simplify
-
-Tested on macOS and Windows Subsystem for Linux (WSL).
-
-See https://belowjs.com/guides/optimisation.html for complete workflow details.
-
-
-### Other
-
-```bash
-# Process single or multiple files
-./below-optimiser pack model.glb
-./below-optimiser pack models/*.glb
-
-# Skip polygon reduction
-./below-optimiser pack model.glb --no-simplify
-```
 
 ## Test Results
 
