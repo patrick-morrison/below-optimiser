@@ -28,17 +28,19 @@ curl -L -o basis_encoder.wasm "https://unpkg.com/@loaders.gl/textures@4.3.3/dist
 
 ### Draco Mesh Compression Encoder
 
-**Files:**
-- `draco_encoder.js` (907 KB)
+**Files (CDN):**
+- `draco_encoder_gltf_nodejs.js`
+- `draco_encoder.wasm`
 
 **Source:**
-```bash
-curl -L -o draco_encoder.js "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/draco_encoder.js"
+```text
+https://unpkg.com/draco3dgltf@1.5.7/draco_encoder_gltf_nodejs.js
+https://unpkg.com/draco3dgltf@1.5.7/draco_encoder.wasm
 ```
 
 **Purpose:** Compresses 3D mesh geometry (vertices, normals, UVs) using Google's Draco algorithm
 
-**Used by:** `draco3dgltf` npm package via `draco()` function in gltf-transform pipeline
+**Used by:** `draco()` transform via a browser‑safe Draco encoder module loaded from CDN. `locateFile()` is configured to resolve the WASM from unpkg.
 
 **Configuration:** 20-bit quantization for all attributes (position, normal, color, texcoord, generic) to prevent seams in multi-texture models
 
@@ -72,9 +74,9 @@ curl -L -o draco_encoder.js "https://cdn.jsdelivr.net/npm/three@0.170.0/examples
 - Purpose: Browser-compatible KTX2 texture encoding
 - Provides: `ktx2()` function for gltf-transform
 
-**draco3dgltf@1.5.7**
-- Purpose: Draco encoder/decoder modules
-- Provides: `createEncoderModule()`, `createDecoderModule()`
+**Draco (CDN UMD)**
+- Purpose: Draco encoder module (browser-compatible)
+- Loaded from unpkg with `locateFile()` pointing to `draco_encoder.wasm`
 
 ---
 
@@ -94,6 +96,10 @@ The browser pipeline matches the shell script (`below-optimiser`) as closely as 
 3. **KTX2/ETC1S:** `ktx2({ isUASTC: false, quality: 64, generateMipmap: true })`
 4. **Draco:** `draco({ method: 'sequential', quantizePosition: 20, ... })`
 
+**Implementation notes:**
+- Transforms execute sequentially with per‑step progress updates.
+- KTX2 step has a timeout safeguard to avoid silent hangs.
+
 ---
 
 ## Known Issues
@@ -102,11 +108,10 @@ The browser pipeline matches the shell script (`below-optimiser`) as closely as 
 - `ndarray-pixels.mjs.map` - Not critical, can be ignored
 - These are debugging files from CDN packages and don't affect functionality
 
-### Browser Limitations
-- **None!** Full feature parity with CLI achieved through:
-  - Basis Universal WASM encoder for KTX2
-  - Google Draco WASM encoder for mesh compression
-  - Meshoptimizer for polygon reduction
+### Browser Behavior
+- Dragging image files onto the viewer applies them as new textures when no matching texture name is found.
+- Download button remains disabled until a model is optimized or textures are updated.
+- Status note shows: “New texture”, “Optimised”, or “New texture + optimised”.
 
 ---
 
@@ -116,7 +121,8 @@ The browser pipeline matches the shell script (`below-optimiser`) as closely as 
 |------|------|---------|
 | basis_encoder.js | 127 KB | Basis Universal encoder JS |
 | basis_encoder.wasm | 1.4 MB | Basis Universal encoder WASM |
-| draco_encoder.js | 907 KB | Draco mesh encoder |
+| draco_encoder_gltf_nodejs.js | ~49 KB | Draco encoder JS loader |
+| draco_encoder.wasm | 370 KB | Draco encoder WASM |
 | **Total** | **~2.4 MB** | One-time download, cached by browser |
 
 ---
@@ -130,8 +136,9 @@ To update the WASM files in the future:
 curl -L -o basis_encoder.js "https://unpkg.com/@loaders.gl/textures@latest/dist/libs/basis_encoder.js"
 curl -L -o basis_encoder.wasm "https://unpkg.com/@loaders.gl/textures@latest/dist/libs/basis_encoder.wasm"
 
-# Update Draco encoder (match three.js version)
-curl -L -o draco_encoder.js "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/libs/draco/draco_encoder.js"
+# Draco encoder (UMD + WASM)
+curl -L -o draco_encoder_gltf_nodejs.js "https://unpkg.com/draco3dgltf@1.5.7/draco_encoder_gltf_nodejs.js"
+curl -L -o draco_encoder.wasm "https://unpkg.com/draco3dgltf@1.5.7/draco_encoder.wasm"
 ```
 
 **Important:** Always test after updating to ensure compatibility with gltf-transform and ktx2-encoder packages.

@@ -22,8 +22,8 @@
     }
     </script>
 
-    <!-- Load Draco encoder from local file (Three.js) -->
-    <script src="./draco_encoder.js"></script>
+    <!-- Load Draco encoder (browser build) -->
+    <script src="https://unpkg.com/draco3dgltf@1.5.7/draco_encoder_gltf_nodejs.js"></script>
     
     <link rel="stylesheet" href="./belowjs.css">
     
@@ -207,6 +207,8 @@
       border-radius: 10px;
       border: 1px solid #334155;
       box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      box-sizing: border-box;
+      width: 240px;
       min-width: 220px;
       max-width: 280px;
     }
@@ -230,10 +232,14 @@
   /* Optimise/Download/Swap buttons */
   .model-stats .actions {
     display: flex;
+    flex-direction: column;
     gap: 8px;
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid #334155;
+  }
+  .model-stats .actions.texture-actions {
+    flex-direction: row;
   }
   .model-stats .action-btn {
     flex: 1;
@@ -244,6 +250,10 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .model-stats .action-btn:disabled {
     opacity: 0.5;
@@ -313,6 +323,12 @@
     border-top-color: #3b82f6;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+  }
+
+  .status-note {
+    margin-top: 6px;
+    font-size: 11px;
+    color: rgba(226, 232, 240, 0.65);
   }
   @keyframes spin {
     to { transform: rotate(360deg); }
@@ -395,12 +411,13 @@
     <button class="action-btn secondary" id="swapBtn" style="display: none;">Swap</button>
     <button class="action-btn success" id="downloadBtn" style="display: none;">Download</button>
   </div>
-  <div class="actions" id="textureButtons" style="display: none; margin-top: 0; padding-top: 8px;">
+  <div class="actions texture-actions" id="textureButtons" style="display: none; margin-top: 0; padding-top: 8px;">
     <button class="action-btn secondary" id="downloadTexturesBtn" style="font-size: 11px; padding: 6px 10px;">↓ Textures</button>
     <button class="action-btn secondary" id="uploadTexturesBtn" style="font-size: 11px; padding: 6px 10px;">↑ Textures</button>
     <input type="file" id="textureInput" accept="image/*" multiple style="display: none;">
   </div>
   <div class="progress-text" id="progressText" style="display: none;"></div>
+  <div class="status-note" id="modelStatus" style="display: none;"></div>
   <div class="view-indicator" id="viewIndicator" style="display: none;"></div>
   </div>
 
@@ -436,6 +453,7 @@
         let isShowingOptimized = false;
         let isOptimizing = false;
         let originalFileName = 'model.glb';
+        let hasNewTextures = false;
 
         // UI elements for optimization
         const actionButtons = document.getElementById('actionButtons');
@@ -448,6 +466,7 @@
         const textureInput = document.getElementById('textureInput');
         const progressText = document.getElementById('progressText');
         const viewIndicator = document.getElementById('viewIndicator');
+        const modelStatus = document.getElementById('modelStatus');
         const optimizeOverlay = document.getElementById('optimizeOverlay');
         const optimizeStep = document.getElementById('optimizeStep');
 
@@ -471,8 +490,21 @@
           if (io) return;
 
           setProgress('Initializing Draco encoder...');
-          // Use the global DracoEncoderModule from draco_encoder.js (Three.js)
-          dracoEncoder = await DracoEncoderModule();
+          await new Promise(requestAnimationFrame);
+          if (typeof DracoEncoderModule === 'function') {
+            // Use the global DracoEncoderModule from draco3dgltf UMD build
+            dracoEncoder = await withTimeout(
+              Promise.resolve(DracoEncoderModule({
+                locateFile: (file) => (file.endsWith('.wasm')
+                  ? 'https://unpkg.com/draco3dgltf@1.5.7/' + file
+                  : file)
+              })),
+              60000,
+              'Draco encoder init'
+            );
+          } else {
+            throw new Error('Draco encoder not available. Ensure draco3dgltf UMD is loaded.');
+          }
 
           io = new WebIO()
             .registerExtensions([...ALL_EXTENSIONS, KHRDracoMeshCompression])
@@ -481,7 +513,9 @@
             });
 
           // Initialize meshoptimizer simplifier
-          await MeshoptSimplifier.ready;
+          setProgress('Initializing meshoptimizer...');
+          await new Promise(requestAnimationFrame);
+          await withTimeout(MeshoptSimplifier.ready, 60000, 'Meshoptimizer init');
           meshoptSimplifier = MeshoptSimplifier;
         }
 
@@ -512,15 +546,75 @@
           }
         }
 
+        function updateModelStatus() {
+          const hasOptimized = !!optimizedArrayBuffer;
+          let text = '';
+
+          if (hasNewTextures && hasOptimized) {
+            text = 'New texture + optimised';
+          } else if (hasNewTextures) {
+            text = 'New texture';
+          } else if (hasOptimized) {
+            text = 'Optimised';
+          }
+
+          if (text) {
+            modelStatus.textContent = text;
+            modelStatus.style.display = 'block';
+          } else {
+            modelStatus.style.display = 'none';
+          }
+
+          const hasChanges = hasNewTextures || hasOptimized;
+          downloadBtn.style.display = hasModel ? 'block' : 'none';
+          downloadBtn.disabled = !hasChanges;
+          if (hasOptimized) {
+            downloadBtn.textContent = 'Download (Optimised)';
+          } else if (hasNewTextures) {
+            downloadBtn.textContent = 'Download (Updated)';
+          } else {
+            downloadBtn.textContent = 'Download';
+          }
+        }
+
+        function isImageFile(file) {
+          return file && file.type && file.type.startsWith('image/');
+        }
+
+        function isModelFile(file) {
+          if (!file || !file.name) return false;
+          const name = file.name.toLowerCase();
+          return name.endsWith('.glb') || name.endsWith('.gltf');
+        }
+
+        function withTimeout(promise, ms, label) {
+          if (!ms) return promise;
+          return new Promise((resolve, reject) => {
+            const t = setTimeout(() => {
+              reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`));
+            }, ms);
+            promise
+              .then((result) => {
+                clearTimeout(t);
+                resolve(result);
+              })
+              .catch((err) => {
+                clearTimeout(t);
+                reject(err);
+              });
+          });
+        }
+
         // The optimization pipeline matching the shell script
         async function optimizeModel(arrayBuffer) {
+          await new Promise(requestAnimationFrame);
           await initGltfTransform();
 
           setProgress('Reading model...');
-          const document = await io.readBinary(new Uint8Array(arrayBuffer));
+          const gltfDocument = await io.readBinary(new Uint8Array(arrayBuffer));
 
           // Get initial stats
-          const root = document.getRoot();
+          const root = gltfDocument.getRoot();
           let totalTris = 0;
           for (const mesh of root.listMeshes()) {
             for (const prim of mesh.listPrimitives()) {
@@ -543,64 +637,90 @@
             const targetRatio = 1200000 / totalTris;
 
             // Step 1: Dedup
-            setProgress('Removing duplicates...');
-            transforms.push(dedup());
+            transforms.push({
+              label: 'Removing duplicates...',
+              transform: dedup()
+            });
 
             // Step 2: Weld vertices
-            setProgress('Welding vertices...');
-            transforms.push(weld());
+            transforms.push({
+              label: 'Welding vertices...',
+              transform: weld()
+            });
 
             // Step 3: Join meshes with same material (reduces draw calls)
-            setProgress('Joining meshes...');
-            transforms.push(join());
+            transforms.push({
+              label: 'Joining meshes...',
+              transform: join()
+            });
 
             // Step 4: Simplify
-            setProgress(`Simplifying to ~1.2M triangles (ratio: ${targetRatio.toFixed(3)})...`);
-            transforms.push(simplify({
-              simplifier: meshoptSimplifier,
-              ratio: Math.max(targetRatio, 0.1),
-              error: 0.005,
-              lockBorder: true
-            }));
+            transforms.push({
+              label: `Simplifying to ~1.2M triangles (ratio: ${targetRatio.toFixed(3)})...`,
+              transform: simplify({
+                simplifier: meshoptSimplifier,
+                ratio: Math.max(targetRatio, 0.1),
+                error: 0.005,
+                lockBorder: true
+              })
+            });
           }
 
-          // Step 5: Resize textures to max 4096 (shell script line 315)
-          setProgress('Resizing textures to 4096x4096...');
-          transforms.push(textureCompress({
-            resize: [4096, 4096]
-          }));
+          const hasTextures = root.listTextures().length > 0;
 
-          // Step 6: KTX2/ETC1S texture compression with quality 64 (shell script line 318)
-          setProgress('Converting textures to KTX2/ETC1S...');
-          transforms.push(ktx2({
-            isUASTC: false, // ETC1S mode
-            enableDebug: true, // Enable debug to see what's happening
-            generateMipmap: true,
-            quality: 64, // Match shell script quality
-            encoderPath: './', // Path to encoder directory
-            wasmUrl: './basis_encoder.wasm'
-          }));
+          if (hasTextures) {
+            // Step 5: Resize textures to max 4096 (shell script line 315)
+            transforms.push({
+              label: 'Resizing textures to 4096x4096...',
+              transform: textureCompress({
+                resize: [4096, 4096]
+              })
+            });
+
+            // Step 6: KTX2/ETC1S texture compression with quality 64 (shell script line 318)
+            transforms.push({
+              label: 'Converting textures to KTX2/ETC1S...',
+              transform: ktx2({
+                isUASTC: false, // ETC1S mode
+                enableDebug: true, // Enable debug to see what's happening
+                generateMipmap: true,
+                quality: 64, // Match shell script quality
+                encoderPath: './', // Path to encoder directory
+                wasmUrl: './basis_encoder.wasm'
+              }),
+              timeoutMs: 180000
+            });
+          }
 
           // Step 7: Draco compression with 20-bit quantization (shell script lines 322-330)
-          setProgress('Applying 20-bit Draco compression...');
-          transforms.push(draco({
-            method: 'sequential', // Preserves vertex order (important for multi-texture models)
-            encodeSpeed: 0,
-            decodeSpeed: 0,
-            quantizePosition: 20,
-            quantizeNormal: 20,
-            quantizeColor: 20,
-            quantizeTexcoord: 20,
-            quantizeGeneric: 20
-          }));
+          transforms.push({
+            label: 'Applying 20-bit Draco compression...',
+            transform: draco({
+              method: 'sequential', // Preserves vertex order (important for multi-texture models)
+              encodeSpeed: 0,
+              decodeSpeed: 0,
+              quantizePosition: 20,
+              quantizeNormal: 20,
+              quantizeColor: 20,
+              quantizeTexcoord: 20,
+              quantizeGeneric: 20
+            })
+          });
 
-          // Apply all transforms
-          setProgress('Applying optimizations...');
-          await document.transform(...transforms);
+          // Apply transforms sequentially to show accurate progress
+          for (const step of transforms) {
+            setProgress(step.label);
+            await new Promise(requestAnimationFrame);
+            if (step.timeoutMs) {
+              await withTimeout(gltfDocument.transform(step.transform), step.timeoutMs, step.label);
+            } else {
+              await gltfDocument.transform(step.transform);
+            }
+          }
 
           // Write to GLB
           setProgress('Writing GLB...');
-          const optimizedGlb = await io.writeBinary(document);
+          const optimizedGlb = await io.writeBinary(gltfDocument);
 
           setProgress(null);
           return optimizedGlb.buffer;
@@ -613,6 +733,9 @@
           optimiseBtn.disabled = true;
           optimiseBtn.textContent = 'Optimising...';
           showOptimizeOverlay(true);
+          setProgress('Preparing optimization...');
+          await new Promise(requestAnimationFrame);
+          await new Promise((resolve) => setTimeout(resolve, 0));
 
           try {
             optimizedArrayBuffer = await optimizeModel(originalArrayBuffer);
@@ -626,6 +749,7 @@
             swapBtn.style.display = 'block';
             downloadBtn.style.display = 'block';
             updateViewIndicator();
+            updateModelStatus();
 
           } catch (err) {
             console.error('Optimization failed:', err);
@@ -648,15 +772,17 @@
         }
 
         function downloadOptimized() {
-          if (!optimizedArrayBuffer) return;
+          const hasOptimized = !!optimizedArrayBuffer;
+          const hasUpdated = !!originalArrayBuffer && hasNewTextures;
+          if (!hasOptimized && !hasUpdated) return;
 
-          const blob = new Blob([optimizedArrayBuffer], { type: 'model/gltf-binary' });
+          const buffer = hasOptimized ? optimizedArrayBuffer : originalArrayBuffer;
+          const blob = new Blob([buffer], { type: 'model/gltf-binary' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          // Add -optimised suffix before extension
           const baseName = originalFileName.replace(/\.(glb|gltf)$/i, '');
-          a.download = `${baseName}-optimised.glb`;
+          a.download = hasOptimized ? `${baseName}-optimised.glb` : `${baseName}-edited.glb`;
           a.click();
           URL.revokeObjectURL(url);
         }
@@ -688,6 +814,7 @@
             const modelRoot = viewer.belowViewer.loadedModels?.[0]?.model || viewer.belowViewer.sceneManager.scene;
             const stats = collectModelStats(modelRoot);
             updateStatsDisplay(stats);
+            updateModelStatus();
           } finally {
             URL.revokeObjectURL(url);
           }
@@ -698,6 +825,7 @@
           originalArrayBuffer = null;
           optimizedArrayBuffer = null;
           isShowingOptimized = false;
+          hasNewTextures = false;
 
           optimiseBtn.textContent = 'Optimise';
           optimiseBtn.disabled = false;
@@ -706,6 +834,7 @@
           downloadBtn.style.display = 'none';
           viewIndicator.style.display = 'none';
           setProgress(null);
+          updateModelStatus();
         }
 
         // Create fullscreen viewer container
@@ -943,8 +1072,8 @@
 
           try {
             const readIO = await initReadOnlyIO();
-            const document = await readIO.readBinary(new Uint8Array(originalArrayBuffer));
-            const root = document.getRoot();
+            const gltfDocument = await readIO.readBinary(new Uint8Array(originalArrayBuffer));
+            const root = gltfDocument.getRoot();
             const textures = root.listTextures();
 
             if (textures.length === 0) {
@@ -992,9 +1121,11 @@
 
           try {
             const readIO = await initReadOnlyIO();
-            const document = await readIO.readBinary(new Uint8Array(originalArrayBuffer));
-            const root = document.getRoot();
+            const gltfDocument = await readIO.readBinary(new Uint8Array(originalArrayBuffer));
+            const root = gltfDocument.getRoot();
             const textures = root.listTextures();
+            const materials = root.listMaterials();
+            const unmatchedFiles = [];
 
             // Match uploaded files to textures by name
             for (const file of files) {
@@ -1007,12 +1138,42 @@
                 texture.setImage(uint8Array);
                 texture.setMimeType(file.type);
                 setProgress(`Updated texture: ${fileName}`);
+              } else {
+                unmatchedFiles.push(file);
+              }
+            }
+
+            // If no matching texture, assume new texture
+            if (unmatchedFiles.length > 0) {
+              const availableMaterials = materials.slice();
+              const onlyOneNew = unmatchedFiles.length === 1;
+
+              for (const file of unmatchedFiles) {
+                const fileName = file.name.replace(/\.[^.]+$/, '');
+                const arrayBuffer = await file.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                const mimeType = file.type || 'image/png';
+
+                const newTexture = gltfDocument.createTexture(fileName);
+                newTexture.setImage(uint8Array);
+                newTexture.setMimeType(mimeType);
+
+                if (availableMaterials.length > 0) {
+                  const targetMat = availableMaterials.shift();
+                  targetMat.setBaseColorTexture(newTexture);
+                  setProgress(`Added texture to material: ${targetMat.getName() || 'Material'}`);
+                } else if (onlyOneNew && materials.length > 0) {
+                  // Fallback: apply to all materials if only one new texture is provided
+                  materials.forEach((mat) => mat.setBaseColorTexture(newTexture));
+                  setProgress('Applied new texture to all materials');
+                }
               }
             }
 
             // Write updated model back to originalArrayBuffer
-            const updatedGlb = await readIO.writeBinary(document);
+            const updatedGlb = await readIO.writeBinary(gltfDocument);
             originalArrayBuffer = updatedGlb.buffer;
+            hasNewTextures = true;
 
             // If we're viewing optimized, invalidate it
             if (optimizedArrayBuffer) {
@@ -1023,6 +1184,8 @@
               downloadBtn.style.display = 'none';
               updateViewIndicator();
             }
+
+            updateModelStatus();
 
             // Reload the model
             await loadModelFromArrayBuffer(originalArrayBuffer, true);
@@ -1097,11 +1260,11 @@
 
               // Use WebIO to read the GLTF with resources
               const jsonDoc = { json: gltfJson, resources };
-              const document = await readIO.readJSON(jsonDoc);
+              const gltfDocument = await readIO.readJSON(jsonDoc);
 
               // Convert to GLB
               setProgress('Converting to GLB...');
-              const glbData = await readIO.writeBinary(document);
+              const glbData = await readIO.writeBinary(gltfDocument);
               arrayBuffer = glbData.buffer;
 
               setProgress(null);
@@ -1175,7 +1338,22 @@
 
           if (e.dataTransfer.files.length === 0) return;
 
-          await loadModelFile(e.dataTransfer.files);
+          const files = Array.from(e.dataTransfer.files);
+          const modelFiles = files.filter(isModelFile);
+          const imageFiles = files.filter(isImageFile);
+
+          if (modelFiles.length > 0) {
+            await loadModelFile(e.dataTransfer.files);
+            return;
+          }
+
+          if (imageFiles.length > 0) {
+            if (!originalArrayBuffer) {
+              alert('Load a model before dropping textures.');
+              return;
+            }
+            await applyUploadedTextures(imageFiles);
+          }
         });
 
         // Subscribe to camera changes to keep snippet live-updated
