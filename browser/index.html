@@ -16,8 +16,9 @@
             "@gltf-transform/extensions": "https://esm.sh/@gltf-transform/extensions@4",
             "@gltf-transform/functions": "https://esm.sh/@gltf-transform/functions@4",
             "meshoptimizer": "https://esm.sh/meshoptimizer@0.21.0",
-            "ktx2-encoder": "https://esm.sh/ktx2-encoder",
-            "ktx2-encoder/gltf-transform": "https://esm.sh/ktx2-encoder/gltf-transform"
+            "ktx2-encoder": "https://unpkg.com/ktx2-encoder@0.5.1/dist/web/index.js",
+            "ktx2-encoder/gltf-transform": "https://unpkg.com/ktx2-encoder@0.5.1/dist/gltf-transform/index.js",
+            "ktx-parse": "https://unpkg.com/ktx-parse@0.7.1/dist/ktx-parse.esm.js"
         }
     }
     </script>
@@ -209,8 +210,8 @@
       box-shadow: 0 8px 24px rgba(0,0,0,0.35);
       box-sizing: border-box;
       width: 240px;
-      min-width: 220px;
-      max-width: 280px;
+      min-width: 240px;
+      max-width: 240px;
     }
     .model-stats .row {
       position: relative;
@@ -297,6 +298,18 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
+  .status-note.error {
+    color: #fca5a5;
+  }
+  .model-stats .view-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #60a5fa;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
 
   /* Optimization loading overlay */
   .optimize-overlay {
@@ -326,9 +339,13 @@
   }
 
   .status-note {
-    margin-top: 6px;
-    font-size: 11px;
-    color: rgba(226, 232, 240, 0.65);
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     gap: 6px;
+     margin-top: 8px;
+     font-size: 12px;
+     color: #cbd5f5;
   }
   @keyframes spin {
     to { transform: rotate(360deg); }
@@ -395,9 +412,8 @@
   <!-- Optimization loading overlay -->
   <div class="optimize-overlay" id="optimizeOverlay">
     <div class="spinner"></div>
-    <div class="status">Optimising Model</div>
     <div class="step" id="optimizeStep">Initialising...</div>
-    <div class="warning">This may take 1-2 minutes for large models.<br>Please don't close the tab.</div>
+    <div class="warning" id="optimizeWarning">This may take 1-2 minutes for large models.<br>Please don't close the tab.</div>
   </div>
 
   <!-- Model stats panel -->
@@ -408,7 +424,6 @@
   <div class="row"><span class="label">draws</span><span class="value" id="statDraws">—</span></div>
   <div class="actions" id="actionButtons" style="display: none;">
     <button class="action-btn primary" id="optimiseBtn">Optimise</button>
-    <button class="action-btn secondary" id="swapBtn" style="display: none;">Swap</button>
     <button class="action-btn success" id="downloadBtn" style="display: none;">Download</button>
   </div>
   <div class="actions texture-actions" id="textureButtons" style="display: none; margin-top: 0; padding-top: 8px;">
@@ -417,8 +432,10 @@
     <input type="file" id="textureInput" accept="image/*" multiple style="display: none;">
   </div>
   <div class="progress-text" id="progressText" style="display: none;"></div>
-  <div class="status-note" id="modelStatus" style="display: none;"></div>
-  <div class="view-indicator" id="viewIndicator" style="display: none;"></div>
+  <div class="status-note" id="modelStatus" style="display: none;">
+    <span id="statusMessageText"></span>
+    <button class="view-toggle" id="viewToggle" type="button" style="display: none;"></button>
+  </div>
   </div>
 
   <!-- Camera preset snippet (lower-right) -->
@@ -454,21 +471,25 @@
         let isOptimizing = false;
         let originalFileName = 'model.glb';
         let hasNewTextures = false;
+        let optimizeStartTime = null;
+        let optimizeTimer = null;
+        let currentProgressText = '';
 
         // UI elements for optimization
         const actionButtons = document.getElementById('actionButtons');
         const optimiseBtn = document.getElementById('optimiseBtn');
-        const swapBtn = document.getElementById('swapBtn');
         const downloadBtn = document.getElementById('downloadBtn');
         const textureButtons = document.getElementById('textureButtons');
         const downloadTexturesBtn = document.getElementById('downloadTexturesBtn');
         const uploadTexturesBtn = document.getElementById('uploadTexturesBtn');
         const textureInput = document.getElementById('textureInput');
         const progressText = document.getElementById('progressText');
-        const viewIndicator = document.getElementById('viewIndicator');
+        const statusMessageText = document.getElementById('statusMessageText');
+        const viewToggle = document.getElementById('viewToggle');
         const modelStatus = document.getElementById('modelStatus');
         const optimizeOverlay = document.getElementById('optimizeOverlay');
         const optimizeStep = document.getElementById('optimizeStep');
+        const optimizeWarning = document.getElementById('optimizeWarning');
 
         // Initialize gltf-transform IO
         let io = null;
@@ -521,12 +542,35 @@
 
         function setProgress(text) {
           if (text) {
+            currentProgressText = text;
             progressText.textContent = text;
             progressText.style.display = 'block';
-            optimizeStep.textContent = text;
+            if (isOptimizing && optimizeStartTime) {
+              const elapsed = Math.floor((Date.now() - optimizeStartTime) / 1000);
+              optimizeStep.textContent = `${text} (${elapsed}s)`;
+            } else {
+              optimizeStep.textContent = text;
+            }
           } else {
+            currentProgressText = '';
             progressText.style.display = 'none';
           }
+        }
+
+        function startOptimizeTimer() {
+          optimizeStartTime = Date.now();
+          if (optimizeTimer) clearInterval(optimizeTimer);
+          optimizeTimer = setInterval(() => {
+            if (!isOptimizing || !currentProgressText) return;
+            const elapsed = Math.floor((Date.now() - optimizeStartTime) / 1000);
+            optimizeStep.textContent = `${currentProgressText} (${elapsed}s)`;
+          }, 1000);
+        }
+
+        function stopOptimizeTimer() {
+          if (optimizeTimer) clearInterval(optimizeTimer);
+          optimizeTimer = null;
+          optimizeStartTime = null;
         }
 
         function showOptimizeOverlay(show) {
@@ -537,13 +581,19 @@
           }
         }
 
-        function updateViewIndicator() {
-          if (optimizedArrayBuffer) {
-            viewIndicator.textContent = isShowingOptimized ? 'Viewing: Optimised' : 'Viewing: Original';
-            viewIndicator.style.display = 'block';
-          } else {
-            viewIndicator.style.display = 'none';
+        function setOptimizeWarningVisible(show) {
+          if (!optimizeWarning) return;
+          optimizeWarning.style.display = show ? 'block' : 'none';
+        }
+
+        function updateViewToggle() {
+          if (!optimizedArrayBuffer) {
+            viewToggle.style.display = 'none';
+            return;
           }
+
+          viewToggle.style.display = 'inline';
+          viewToggle.textContent = isShowingOptimized ? 'See original' : 'View optimised';
         }
 
         function updateModelStatus() {
@@ -559,8 +609,8 @@
           }
 
           if (text) {
-            modelStatus.textContent = text;
-            modelStatus.style.display = 'block';
+            statusMessageText.textContent = text;
+            modelStatus.style.display = 'flex';
           } else {
             modelStatus.style.display = 'none';
           }
@@ -575,6 +625,21 @@
           } else {
             downloadBtn.textContent = 'Download';
           }
+
+          if (hasOptimized) {
+            statusMessageText.textContent = 'Optimised.';
+          } else if (hasNewTextures) {
+            statusMessageText.textContent = 'Textures updated.';
+          } else {
+            statusMessageText.textContent = 'Model ready.';
+          }
+          updateViewToggle();
+        }
+
+        function showStatusMessage(text, isError = false) {
+          statusMessageText.textContent = text;
+          modelStatus.style.display = 'flex';
+          modelStatus.classList.toggle('error', isError);
         }
 
         function isImageFile(file) {
@@ -585,6 +650,25 @@
           if (!file || !file.name) return false;
           const name = file.name.toLowerCase();
           return name.endsWith('.glb') || name.endsWith('.gltf');
+        }
+
+        async function getMaxTextureDimension(textures) {
+          let maxDim = null;
+          for (const texture of textures) {
+            const image = texture.getImage();
+            if (!image) continue;
+            const mimeType = texture.getMimeType() || 'image/png';
+            try {
+              const blob = new Blob([image], { type: mimeType });
+              const bitmap = await createImageBitmap(blob);
+              const dim = Math.max(bitmap.width, bitmap.height);
+              if (typeof bitmap.close === 'function') bitmap.close();
+              maxDim = maxDim == null ? dim : Math.max(maxDim, dim);
+            } catch (err) {
+              console.warn('Texture decode failed for size check:', err);
+            }
+          }
+          return maxDim;
         }
 
         function withTimeout(promise, ms, label) {
@@ -666,16 +750,27 @@
             });
           }
 
-          const hasTextures = root.listTextures().length > 0;
+          const texturesList = root.listTextures();
+          const hasTextures = texturesList.length > 0;
 
           if (hasTextures) {
-            // Step 5: Resize textures to max 4096 (shell script line 315)
-            transforms.push({
-              label: 'Resizing textures to 4096x4096...',
-              transform: textureCompress({
-                resize: [4096, 4096]
-              })
-            });
+            let maxTextureDimension = null;
+            if (typeof createImageBitmap === 'function') {
+              try {
+                maxTextureDimension = await getMaxTextureDimension(texturesList);
+              } catch (err) {
+                console.warn('Texture size check failed, skipping resize:', err);
+              }
+            }
+
+            if (maxTextureDimension && maxTextureDimension > 8192) {
+              transforms.push({
+                label: 'Resizing textures to 8192x8192...',
+                transform: textureCompress({
+                  resize: [8192, 8192]
+                })
+              });
+            }
 
             // Step 6: KTX2/ETC1S texture compression with quality 64 (shell script line 318)
             transforms.push({
@@ -685,8 +780,9 @@
                 enableDebug: true, // Enable debug to see what's happening
                 generateMipmap: true,
                 quality: 64, // Match shell script quality
-                encoderPath: './', // Path to encoder directory
-                wasmUrl: './basis_encoder.wasm'
+                encoderPath: 'https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/',
+                wasmUrl: 'https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.wasm',
+                jsUrl: 'https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.js'
               }),
               timeoutMs: 180000
             });
@@ -733,7 +829,9 @@
           optimiseBtn.disabled = true;
           optimiseBtn.textContent = 'Optimising...';
           showOptimizeOverlay(true);
+          setOptimizeWarningVisible(true);
           setProgress('Preparing optimization...');
+          startOptimizeTimer();
           await new Promise(requestAnimationFrame);
           await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -746,9 +844,8 @@
 
             // Update UI
             optimiseBtn.style.display = 'none';
-            swapBtn.style.display = 'block';
             downloadBtn.style.display = 'block';
-            updateViewIndicator();
+            updateViewToggle();
             updateModelStatus();
 
           } catch (err) {
@@ -756,19 +853,22 @@
             alert('Optimization failed: ' + err.message);
             optimiseBtn.textContent = 'Optimise';
             optimiseBtn.disabled = false;
+            showStatusMessage(`Optimisation failed: ${err.message}`, true);
           } finally {
             isOptimizing = false;
             showOptimizeOverlay(false);
+            setOptimizeWarningVisible(false);
+            stopOptimizeTimer();
           }
         }
 
-        async function swapModel() {
+        async function toggleView() {
           if (!originalArrayBuffer || !optimizedArrayBuffer) return;
 
           isShowingOptimized = !isShowingOptimized;
           const buffer = isShowingOptimized ? optimizedArrayBuffer : originalArrayBuffer;
           await loadModelFromArrayBuffer(buffer, false);
-          updateViewIndicator();
+          updateViewToggle();
         }
 
         function downloadOptimized() {
@@ -789,8 +889,8 @@
 
         // Event listeners for buttons
         optimiseBtn.addEventListener('click', runOptimization);
-        swapBtn.addEventListener('click', swapModel);
         downloadBtn.addEventListener('click', downloadOptimized);
+        viewToggle.addEventListener('click', toggleView);
 
         // Helper to load model from ArrayBuffer
         async function loadModelFromArrayBuffer(arrayBuffer, updateDiskSize = true) {
@@ -830,9 +930,8 @@
           optimiseBtn.textContent = 'Optimise';
           optimiseBtn.disabled = false;
           optimiseBtn.style.display = 'block';
-          swapBtn.style.display = 'none';
           downloadBtn.style.display = 'none';
-          viewIndicator.style.display = 'none';
+          modelStatus.style.display = 'none';
           setProgress(null);
           updateModelStatus();
         }
@@ -1117,6 +1216,7 @@
           if (!originalArrayBuffer || files.length === 0) return;
 
           showOptimizeOverlay(true);
+          setOptimizeWarningVisible(false);
           setProgress('Applying new textures...');
 
           try {
@@ -1180,9 +1280,8 @@
               optimizedArrayBuffer = null;
               isShowingOptimized = false;
               optimiseBtn.style.display = 'block';
-              swapBtn.style.display = 'none';
               downloadBtn.style.display = 'none';
-              updateViewIndicator();
+              updateViewToggle();
             }
 
             updateModelStatus();
@@ -1232,6 +1331,7 @@
 
           // Show loading overlay
           showOptimizeOverlay(true);
+          setOptimizeWarningVisible(false);
           setProgress('Loading model...');
 
           try {
@@ -1299,6 +1399,7 @@
               const modelRoot = viewer.belowViewer.loadedModels?.[0]?.model || viewer.belowViewer.sceneManager.scene;
               const stats = collectModelStats(modelRoot);
               updateStatsDisplay(stats);
+              setProgress(null);
             } finally {
               URL.revokeObjectURL(url);
             }

@@ -6,19 +6,19 @@ This document tracks the origin and purpose of all WASM and JavaScript encoder f
 
 ### Basis Universal Encoder (KTX2/ETC1S Texture Compression)
 
-**Files:**
-- `basis_encoder.js` (127 KB)
-- `basis_encoder.wasm` (1.4 MB)
+**Files (CDN):**
+- `basis_encoder.js`
+- `basis_encoder.wasm`
 
 **Source:**
-```bash
-curl -L -o basis_encoder.js "https://unpkg.com/@loaders.gl/textures@4.3.3/dist/libs/basis_encoder.js"
-curl -L -o basis_encoder.wasm "https://unpkg.com/@loaders.gl/textures@4.3.3/dist/libs/basis_encoder.wasm"
+```text
+https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.js
+https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.wasm
 ```
 
 **Purpose:** Encodes textures to KTX2 format with ETC1S or UASTC compression (GPU-friendly compressed textures)
 
-**Used by:** `ktx2-encoder` npm package via `ktx2()` function in gltf-transform pipeline
+**Used by:** `ktx2-encoder` module via `ktx2()` function in gltf-transform pipeline (browser ESM build)
 
 **Documentation:**
 - [Basis Universal on GitHub](https://github.com/BinomialLLC/basis_universal)
@@ -70,9 +70,14 @@ https://unpkg.com/draco3dgltf@1.5.7/draco_encoder.wasm
 - Purpose: Mesh simplification (polygon reduction)
 - Provides: `MeshoptSimplifier`
 
-**ktx2-encoder**
+**ktx2-encoder@0.5.1**
 - Purpose: Browser-compatible KTX2 texture encoding
 - Provides: `ktx2()` function for gltf-transform
+
+**ktx-parse@0.7.1**
+- Purpose: KTX2 parsing dependency required by `ktx2-encoder` in browser
+- Loaded via import map from unpkg:
+	- https://unpkg.com/ktx-parse@0.7.1/dist/ktx-parse.esm.js
 
 **Draco (CDN UMD)**
 - Purpose: Draco encoder module (browser-compatible)
@@ -86,19 +91,20 @@ The browser pipeline matches the shell script (`below-optimiser`) as closely as 
 
 ### Shell Script Pipeline:
 1. **If > 1.2M triangles:** `dedup` → `weld` → `join` → `simplify`
-2. **Resize textures** to max 4096x4096
+2. **Resize textures** only if any exceed 8K (downscale to 8192x8192)
 3. **KTX2/ETC1S compression** with quality 64
 4. **Draco compression** with 20-bit quantization (sequential method)
 
 ### Browser Pipeline:
 1. **If > 1.2M triangles:** `dedup()` → `weld()` → `join()` → `simplify()`
-2. **Resize textures:** `textureCompress({ resize: [4096, 4096] })`
+2. **Resize textures:** `textureCompress({ resize: [8192, 8192] })` only when a source texture exceeds 8K
 3. **KTX2/ETC1S:** `ktx2({ isUASTC: false, quality: 64, generateMipmap: true })`
 4. **Draco:** `draco({ method: 'sequential', quantizePosition: 20, ... })`
 
 **Implementation notes:**
 - Transforms execute sequentially with per‑step progress updates.
 - KTX2 step has a timeout safeguard to avoid silent hangs.
+- Texture resize step is conditional, based on a max-dimension check using `createImageBitmap()`.
 
 ---
 
@@ -112,6 +118,7 @@ The browser pipeline matches the shell script (`below-optimiser`) as closely as 
 - Dragging image files onto the viewer applies them as new textures when no matching texture name is found.
 - Download button remains disabled until a model is optimized or textures are updated.
 - Status note shows: “New texture”, “Optimised”, or “New texture + optimised”.
+- Long-duration warning is shown only during optimisation; model loading and texture updates use normal loading state.
 
 ---
 
@@ -119,8 +126,8 @@ The browser pipeline matches the shell script (`below-optimiser`) as closely as 
 
 | File | Size | Purpose |
 |------|------|---------|
-| basis_encoder.js | 127 KB | Basis Universal encoder JS |
-| basis_encoder.wasm | 1.4 MB | Basis Universal encoder WASM |
+| basis_encoder.js | ~127 KB | Basis Universal encoder JS |
+| basis_encoder.wasm | ~1.4 MB | Basis Universal encoder WASM |
 | draco_encoder_gltf_nodejs.js | ~49 KB | Draco encoder JS loader |
 | draco_encoder.wasm | 370 KB | Draco encoder WASM |
 | **Total** | **~2.4 MB** | One-time download, cached by browser |
@@ -132,9 +139,9 @@ The browser pipeline matches the shell script (`below-optimiser`) as closely as 
 To update the WASM files in the future:
 
 ```bash
-# Update Basis encoder (check latest version at unpkg.com/@loaders.gl/textures)
-curl -L -o basis_encoder.js "https://unpkg.com/@loaders.gl/textures@latest/dist/libs/basis_encoder.js"
-curl -L -o basis_encoder.wasm "https://unpkg.com/@loaders.gl/textures@latest/dist/libs/basis_encoder.wasm"
+# Basis encoder (served from ktx2-encoder package)
+curl -L -o basis_encoder.js "https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.js"
+curl -L -o basis_encoder.wasm "https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.wasm"
 
 # Draco encoder (UMD + WASM)
 curl -L -o draco_encoder_gltf_nodejs.js "https://unpkg.com/draco3dgltf@1.5.7/draco_encoder_gltf_nodejs.js"
