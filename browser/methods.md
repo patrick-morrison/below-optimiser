@@ -90,16 +90,18 @@ https://unpkg.com/draco3dgltf@1.5.7/draco_encoder.wasm
 The browser pipeline matches the shell script (`below-optimiser`) as closely as possible:
 
 ### Shell Script Pipeline:
-1. **If > 1.2M triangles:** `dedup` → `weld` → `join` → `simplify`
+1. **Always:** `dedup` → `weld` → `join`
+2. **If > 1.2M triangles:** `simplify`
 2. **Resize textures** only if any exceed 8K (downscale to 8192x8192)
 3. **KTX2/ETC1S compression** with quality 64
 4. **Draco compression** with 20-bit quantization (sequential method)
 
 ### Browser Pipeline:
-1. **If > 1.2M triangles:** `dedup()` → `weld()` → `join()` → `simplify()`
-2. **Resize textures:** `textureCompress({ resize: [8192, 8192] })` only when a source texture exceeds 8K
-3. **KTX2/ETC1S:** `ktx2({ isUASTC: false, quality: 64, generateMipmap: true })`
-4. **Draco:** `draco({ method: 'sequential', quantizePosition: 20, ... })`
+1. **Always:** `dedup()` → `weld()` → `join()`
+2. **If > 1.2M triangles:** `simplify()`
+3. **Resize textures:** `textureCompress({ resize: [8192, 8192] })` only when a source texture exceeds 8K
+4. **KTX2/ETC1S:** `ktx2({ isUASTC: false, quality: 64, generateMipmap: true })`
+5. **Draco:** `draco({ method: 'sequential', quantizePosition: 20, ... })`
 
 **Implementation notes:**
 - Transforms execute sequentially with per‑step progress updates.
@@ -116,6 +118,7 @@ The browser pipeline matches the shell script (`below-optimiser`) as closely as 
 
 ### Browser Behavior
 - Dragging image files onto the viewer applies them as new textures when no matching texture name is found.
+- Multi-texture drops map by material name and common slot keywords (basecolor, normal, roughness, metallic, occlusion, emissive, orm).
 - Download button remains disabled until a model is optimized or textures are updated.
 - Status note shows: “New texture”, “Optimised”, or “New texture + optimised”.
 - Long-duration warning is shown only during optimisation; model loading and texture updates use normal loading state.
