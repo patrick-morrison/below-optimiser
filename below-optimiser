@@ -15,17 +15,21 @@ usage() {
     echo "Copyright (C) 2025 Patrick Morrison"
     echo
     echo "Usage:"
-    echo "  $0 pack <input...> [--no-simplify]  # Pack & optimize for Quest"
+    echo "  $0 pack <input...> [--no-simplify] [--polygon <count>] [--suffix <suffix>]  # Pack & optimize for Quest"
     echo "  $0 unpack <input.glb> [output-dir]  # Extract textures for editing"
     echo
     echo "Options:"
-    echo "  --no-simplify    Skip automatic polygon reduction (models >1.2M polygons)"
+    echo "  --no-simplify       Skip automatic polygon reduction (models >1.2M polygons)"
+    echo "  --polygon <count>   Set target polygon count (default: 1,200,000)"
+    echo "  --suffix <suffix>   Set output suffix (default: '-quest')"
     echo
     echo "Examples:"
-    echo "  $0 pack model.glb                   # Optimize single GLB"
-    echo "  $0 pack model1.glb model2.glb       # Optimize multiple GLBs"
-    echo "  $0 pack models/*.glb                # Optimize all GLBs in folder"
-    echo "  $0 pack model.glb --no-simplify     # Skip polygon reduction"
+    echo "  $0 pack model.glb                      # Optimize single GLB"
+    echo "  $0 pack model1.glb model2.glb          # Optimize multiple GLBs"
+    echo "  $0 pack models/*.glb                   # Optimize all GLBs in folder"
+    echo "  $0 pack model.glb --no-simplify        # Skip polygon reduction"
+    echo "  $0 pack model.glb --polygon 800000     # Target 800k polygons"
+    echo "  $0 pack model.glb --suffix '_ar'       # Output model_ar.glb"
     echo "  $0 unpack model.glb"
     echo
     echo "For detailed documentation: https://github.com/patrickmorrison/below-optimiser"
@@ -171,6 +175,7 @@ pack_optimize() {
     local INPUT="$1"
     local OUTPUT="$2"
     local SKIP_SIMPLIFY="${3:-false}"
+    local MAX_POLYGONS="${4:-1200000}"
     local TEMP="${OUTPUT%.glb}-temp.glb"
 
     echo "Optimizing for Quest..."
@@ -296,7 +301,6 @@ pack_optimize() {
     # Check polygon count and simplify if needed (before compression)
     if [ "$SKIP_SIMPLIFY" = false ]; then
         local POLYGON_COUNT=$(count_polygons "$TEMP")
-        local MAX_POLYGONS=1200000
 
         if [ "$POLYGON_COUNT" -gt "$MAX_POLYGONS" ]; then
             echo ""
@@ -341,6 +345,8 @@ case "${1:-}" in
         [[ $# -lt 1 ]] && usage
 
         SKIP_SIMPLIFY=false
+        MAX_POLYGONS=1200000
+        SUFFIX="-quest"
         INPUTS=()
 
         # Parse inputs and flags
@@ -349,6 +355,22 @@ case "${1:-}" in
                 --no-simplify)
                     SKIP_SIMPLIFY=true
                     shift
+                    ;;
+                --polygon)
+                    if [[ $# -lt 2 ]] || [[ ! "$2" =~ ^[0-9]+$ ]]; then
+                        echo "Error: --polygon requires a numeric value"
+                        exit 1
+                    fi
+                    MAX_POLYGONS="$2"
+                    shift 2
+                    ;;
+                --suffix)
+                    if [[ $# -lt 2 ]]; then
+                        echo "Error: --suffix requires a value"
+                        exit 1
+                    fi
+                    SUFFIX="$2"
+                    shift 2
                     ;;
                 *)
                     INPUTS+=("$1")
@@ -373,16 +395,16 @@ case "${1:-}" in
             # Generate output filename
             if [ -d "$INPUT" ]; then
                 BASE=$(basename "$INPUT" _edit)
-                OUTPUT="${BASE}-quest.glb"
+                OUTPUT="${BASE}${SUFFIX}.glb"
             else
                 BASE=$(basename "$INPUT" .glb)
-                OUTPUT="${BASE}-quest.glb"
+                OUTPUT="${BASE}${SUFFIX}.glb"
             fi
 
             echo "=================================================="
             echo "Processing: $INPUT"
             echo "=================================================="
-            pack_optimize "$INPUT" "$OUTPUT" "$SKIP_SIMPLIFY"
+            pack_optimize "$INPUT" "$OUTPUT" "$SKIP_SIMPLIFY" "$MAX_POLYGONS"
             echo ""
         done
         ;;
