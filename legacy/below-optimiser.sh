@@ -106,9 +106,6 @@ simplify_model() {
     echo "High polygon count detected. Running simplification pipeline..."
 
     local TMP_DIR=$(mktemp -d)
-    local TMP_DEDUP="$TMP_DIR/tmp-dedup.glb"
-    local TMP_WELD="$TMP_DIR/tmp-weld.glb"
-    local TMP_JOIN="$TMP_DIR/tmp-join.glb"
     local TMP_SIMPLIFIED="$TMP_DIR/tmp-simplified.glb"
     local TMP_WORKING="$INPUT_GLB"
 
@@ -138,12 +135,8 @@ simplify_model() {
             echo "Attempt $ATTEMPT: From $(printf "%'d" $CURRENT_POLYGONS) polygons, target $(printf "%'d" $TARGET_POLYGONS) (ratio: $RATIO)..."
         fi
 
-        # Run simplification pipeline - always use join to reduce draw calls
-        # Join merges meshes with the same material, reducing draw calls significantly
-        gltf-transform dedup "$TMP_WORKING" "$TMP_DEDUP" 2>/dev/null
-        gltf-transform weld "$TMP_DEDUP" "$TMP_WELD" 2>/dev/null
-        gltf-transform join "$TMP_WELD" "$TMP_JOIN" 2>/dev/null
-        gltf-transform simplify "$TMP_JOIN" "$TMP_SIMPLIFIED" \
+        # Simplify (dedup/weld/join are handled before this function)
+        gltf-transform simplify "$TMP_WORKING" "$TMP_SIMPLIFIED" \
             --ratio "$RATIO" \
             --error 0.005 \
             --lock-border true 2>/dev/null
@@ -177,6 +170,9 @@ pack_optimize() {
     local SKIP_SIMPLIFY="${3:-false}"
     local MAX_POLYGONS="${4:-1200000}"
     local TEMP="${OUTPUT%.glb}-temp.glb"
+    local TMP_DEDUP="${OUTPUT%.glb}-dedup.glb"
+    local TMP_WELD="${OUTPUT%.glb}-weld.glb"
+    local TMP_JOIN="${OUTPUT%.glb}-join.glb"
 
     echo "Optimizing for Quest..."
 
@@ -298,6 +294,15 @@ pack_optimize() {
         cp "$INPUT" "$TEMP"
     fi
 
+    # Always dedup, weld, join to reduce redundancy and draw calls
+    echo "Removing duplicates..."
+    gltf-transform dedup "$TEMP" "$TMP_DEDUP" 2>/dev/null
+    echo "Welding vertices..."
+    gltf-transform weld "$TMP_DEDUP" "$TMP_WELD" 2>/dev/null
+    echo "Joining meshes..."
+    gltf-transform join "$TMP_WELD" "$TMP_JOIN" 2>/dev/null
+    mv "$TMP_JOIN" "$TEMP"
+
     # Check polygon count and simplify if needed (before compression)
     if [ "$SKIP_SIMPLIFY" = false ]; then
         local POLYGON_COUNT=$(count_polygons "$TEMP")
@@ -333,7 +338,7 @@ pack_optimize() {
         --quantize-texcoord 20 \
         --quantize-generic 20
 
-    rm "$TEMP" "${TEMP%.glb}-resized.glb" "${TEMP%.glb}-ktx.glb"
+    rm -f "$TEMP" "${TEMP%.glb}-resized.glb" "${TEMP%.glb}-ktx.glb" "$TMP_DEDUP" "$TMP_WELD"
     echo "Quest-optimized GLB saved as: $OUTPUT"
 }
 
