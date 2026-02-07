@@ -203,6 +203,31 @@ function countPolygonsFromDocument(document) {
 }
 
 /**
+ * Apply uniform scaling to all scene roots without touching mesh data.
+ * Creates a scale wrapper node per scene so existing hierarchy stays intact.
+ */
+function applyUniformScale(document, factor) {
+  if (factor === 1) return;
+
+  const root = document.getRoot();
+  const scenes = root.listScenes();
+
+  scenes.forEach((scene, i) => {
+    const sceneChildren = [...scene.listChildren()];
+    if (sceneChildren.length === 0) return;
+
+    const scaleNode = document
+      .createNode(`belowjs_scale_${i + 1}`)
+      .setScale([factor, factor, factor]);
+
+    scene.addChild(scaleNode);
+    for (const child of sceneChildren) {
+      scaleNode.addChild(child);
+    }
+  });
+}
+
+/**
  * Simplify a document to target polygon count
  * Uses multi-attempt approach with increasing aggression
  */
@@ -259,9 +284,14 @@ export async function pack(inputPath, options = {}) {
     output,
     simplify: shouldSimplify = true,
     targetPolygons = 1200000,
+    scale = 1,
     onProgress = () => {},
     onStep = () => {}
   } = options;
+
+  if (!Number.isFinite(scale) || scale <= 0) {
+    throw new Error(`Invalid scale "${scale}". Scale must be a positive number.`);
+  }
 
   // Check KTX-Software is installed before starting
   await requireKtxSoftware();
@@ -297,6 +327,14 @@ export async function pack(inputPath, options = {}) {
     }
 
     onStep('load', true, 'Model loaded');
+
+    // Step 1b: Optional uniform scene scaling
+    if (scale !== 1) {
+      applyUniformScale(document, scale);
+      onStep('scale', true, `Scaled scene uniformly by ${scale}x`);
+    } else {
+      onStep('scale', true, 'Scale: unchanged (1x)');
+    }
 
     // Get initial polygon count
     const polygonsBefore = countPolygonsFromDocument(document);
@@ -359,6 +397,7 @@ export async function pack(inputPath, options = {}) {
       outputPath: output,
       inputSize,
       outputSize,
+      scale,
       polygonsBefore,
       polygonsAfter
     };

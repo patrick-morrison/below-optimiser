@@ -4,7 +4,9 @@ Optimises photogrammetry GLB models for WebXR on Meta Quest by applying:
 
 - Draco mesh compression (20-bit)
 - KTX2 texture compression
+- texture resizing (max 4096x4096)
 - automatic mesh simplification above polygon limits
+- optional uniform scene scaling (`--scale`)
 
 The original bash script (v1) is kept in `legacy/below-optimiser.sh`.
 
@@ -64,6 +66,12 @@ Custom output suffix:
 belowjs-optimiser pack model.glb --suffix '_ar'
 ```
 
+Apply uniform scene scaling:
+
+```sh
+belowjs-optimiser pack model.glb --scale 0.01
+```
+
 Unpack for texture edits:
 
 ```sh
@@ -85,6 +93,13 @@ belowjs-optimiser info model.glb
 
 `below-optimiser` is still supported as a compatibility alias.
 
+## Scaling behavior
+
+- Default behavior: geometry/object scale is unchanged (`--scale 1`).
+- Use `--scale <factor>` to apply uniform scene scaling.
+- Scene hierarchy is wrapped with a scale node; mesh data is not rewritten.
+- Texture dimensions may still be resized (down to max 4096x4096).
+
 ## Programmatic API
 
 ```js
@@ -93,6 +108,7 @@ import { pack, unpack, inspect } from 'belowjs-optimiser';
 const packed = await pack('model.glb', {
   output: 'model-belowjs.glb',
   targetPolygons: 1200000,
+  scale: 1,
   simplify: true
 });
 

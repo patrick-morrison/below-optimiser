@@ -4,13 +4,13 @@ import { program } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { glob } from 'glob';
-import { existsSync, statSync } from 'fs';
+import { existsSync, statSync, readFileSync } from 'fs';
 import { basename, dirname, resolve } from 'path';
 import { pack } from '../src/pack.js';
 import { unpack } from '../src/unpack.js';
 import { inspect } from '../src/inspect.js';
 
-const VERSION = '2.0.0';
+const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
 // Format bytes to human readable
 function formatBytes(bytes) {
@@ -43,6 +43,7 @@ Requirements:
 
 Common examples:
   belowjs-optimiser pack model.glb
+  belowjs-optimiser pack model.glb --scale 0.01
   belowjs-optimiser pack "models/*.glb" --polygon 800000 --suffix "_ar"
   belowjs-optimiser unpack model.glb
   belowjs-optimiser pack model_edit/
@@ -57,6 +58,7 @@ const packCommand = program
   .argument('<input...>', '.glb file(s), glob(s), or *_edit directory path(s)')
   .option('--no-simplify', 'Skip automatic polygon reduction')
   .option('--polygon <count>', 'Target polygon count for simplification', '1200000')
+  .option('--scale <factor>', 'Uniform scene scale factor (for example: 0.01)', '1')
   .option('--suffix <suffix>', 'Output suffix for generated GLB', '-belowjs')
   .action(async (inputs, options) => {
     console.log(chalk.bold(`\nbelowjs-optimiser v${VERSION}\n`));
@@ -78,8 +80,14 @@ const packCommand = program
     }
 
     const targetPolygons = parseInt(options.polygon, 10);
+    const scaleFactor = parseFloat(options.scale);
     const suffix = options.suffix;
     const shouldSimplify = options.simplify;
+
+    if (!Number.isFinite(scaleFactor) || scaleFactor <= 0) {
+      console.log(chalk.red(`Error: --scale must be a positive number (received: ${options.scale})`));
+      process.exit(1);
+    }
 
     for (const input of files) {
       const inputPath = resolve(input);
@@ -111,6 +119,7 @@ const packCommand = program
           output: outputPath,
           simplify: shouldSimplify,
           targetPolygons,
+          scale: scaleFactor,
           onProgress: (step, detail) => {
             spinner.start(detail || step);
           },
@@ -156,11 +165,13 @@ Behavior:
   - For .glb input, output is written beside the source file.
   - For directory input, directory must contain <base>.gltf (for example: ship_edit/ship.gltf).
   - Output name is <basename><suffix>.glb (for example: model-belowjs.glb).
+  - Use --scale for uniform scene scaling (default: 1, unchanged).
   - Simplification runs only when polygons exceed --polygon, unless --no-simplify is used.
   - Original input files are not modified.
 
 Examples:
   belowjs-optimiser pack model.glb
+  belowjs-optimiser pack model.glb --scale 0.01
   belowjs-optimiser pack "models/*.glb" --polygon 800000
   belowjs-optimiser pack model_edit/ --suffix "_ar"
 `);

@@ -7,17 +7,28 @@
  * 1. Full pack pipeline (GLB → optimised GLB)
  * 2. Unpack → Pack pipeline (GLB → GLTF+textures → optimised GLB)
  * 3. Double optimisation (already optimised → optimise again)
+ * 4. Scaled pack on a curated 3-model subset
  *
  * Run with: node test/test-suite.js
  */
 
 import { pack, unpack, inspect } from '../src/index.js';
-import { existsSync, readdirSync, statSync, rmSync, mkdirSync } from 'fs';
+import { NodeIO } from '@gltf-transform/core';
+import { KHRONOS_EXTENSIONS } from '@gltf-transform/extensions';
+import draco3d from 'draco3dgltf';
+import { existsSync, readdirSync, statSync, rmSync, mkdirSync, readFileSync } from 'fs';
 import { join, basename } from 'path';
 import chalk from 'chalk';
 
 const MODELS_DIR = join(import.meta.dirname, 'models');
 const OUTPUT_DIR = join(import.meta.dirname, 'output');
+const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+const SCALE_TEST_FACTOR = 0.01;
+const SCALE_TEST_MODEL_NAMES = [
+  'providence_island_sailing_canal_boat-test',
+  'trial_1622_wreck_site_2021',
+  'shipwreck_uunihylky_-_varmbadan_kirkkonummi'
+];
 
 // Ensure output directory exists
 if (!existsSync(OUTPUT_DIR)) {
@@ -62,8 +73,79 @@ function formatDuration(ms) {
 const results = {
   pack: [],
   unpackPack: [],
-  reoptimise: []
+  reoptimise: [],
+  scaled: []
 };
+
+let cachedIo = null;
+
+async function createIO() {
+  if (cachedIo) return cachedIo;
+  cachedIo = new NodeIO()
+    .registerExtensions(KHRONOS_EXTENSIONS)
+    .registerDependencies({
+      'draco3d.decoder': await draco3d.createDecoderModule(),
+      'draco3d.encoder': await draco3d.createEncoderModule()
+    });
+  return cachedIo;
+}
+
+function isUniformScale(scale, factor, epsilon = 1e-6) {
+  return (
+    Math.abs(scale[0] - factor) < epsilon &&
+    Math.abs(scale[1] - factor) < epsilon &&
+    Math.abs(scale[2] - factor) < epsilon
+  );
+}
+
+async function hasScaleWrapper(outputPath, factor) {
+  const io = await createIO();
+  const document = await io.read(outputPath);
+
+  for (const scene of document.getRoot().listScenes()) {
+    for (const rootNode of scene.listChildren()) {
+      let found = false;
+      rootNode.traverse((node) => {
+        if (found) return;
+        const nodeName = node.getName() || '';
+        if (nodeName.startsWith('belowjs_scale_') && isUniformScale(node.getScale(), factor)) {
+          found = true;
+        }
+      });
+      if (found) return true;
+    }
+  }
+
+  return false;
+}
+
+function selectScaleModels(models) {
+  const selected = [];
+  const seen = new Set();
+
+  for (const name of SCALE_TEST_MODEL_NAMES) {
+    const model = models.find((m) => m.name === name);
+    if (!model || seen.has(model.name)) continue;
+    selected.push(model);
+    seen.add(model.name);
+  }
+
+  // Fallback for custom model sets: choose small, median, large.
+  const fallback = [
+    models[0],
+    models[Math.floor(models.length / 2)],
+    models[models.length - 1]
+  ].filter(Boolean);
+
+  for (const model of fallback) {
+    if (seen.has(model.name)) continue;
+    selected.push(model);
+    seen.add(model.name);
+    if (selected.length >= 3) break;
+  }
+
+  return selected.slice(0, 3);
+}
 
 // Run a single test with timing
 async function runTest(name, testFn) {
@@ -167,10 +249,39 @@ async function testReoptimise(model) {
   };
 }
 
+// Test 4: Scaled pack on selected models
+async function testScaledPack(model, scaleFactor) {
+  const scaleLabel = String(scaleFactor).replace('.', '_');
+  const outputPath = join(OUTPUT_DIR, `${model.name}-scale-${scaleLabel}-belowjs.glb`);
+
+  const result = await pack(model.path, {
+    output: outputPath,
+    targetPolygons: 1200000,
+    simplify: true,
+    scale: scaleFactor,
+    onProgress: () => {},
+    onStep: () => {}
+  });
+
+  const scaleApplied = await hasScaleWrapper(outputPath, scaleFactor);
+  if (!scaleApplied) {
+    throw new Error(`Expected scale wrapper not found in output (${scaleFactor}x)`);
+  }
+
+  return {
+    inputSize: model.size,
+    outputSize: result.outputSize,
+    polygonsBefore: result.polygonsBefore,
+    polygonsAfter: result.polygonsAfter,
+    scale: scaleFactor,
+    compression: ((1 - result.outputSize / model.size) * 100).toFixed(1)
+  };
+}
+
 // Main test runner
 async function runTestSuite() {
   console.log(chalk.bold('\n═══════════════════════════════════════════════════════════'));
-  console.log(chalk.bold('  Below Optimiser Test Suite v2.0.0'));
+  console.log(chalk.bold(`  Below Optimiser Test Suite v${VERSION}`));
   console.log(chalk.bold('═══════════════════════════════════════════════════════════\n'));
 
   const models = getModels();
@@ -186,6 +297,8 @@ async function runTestSuite() {
     console.log(chalk.dim(`  • ${model.name} (${formatBytes(model.size)})`));
   }
   console.log('');
+
+  const scaleModels = selectScaleModels(models);
 
   // ═══════════════════════════════════════════════════════════
   // TEST 1: Full Pack Pipeline
@@ -213,6 +326,34 @@ async function runTestSuite() {
           `${result.polygonsBefore.toLocaleString()} → ${result.polygonsAfter.toLocaleString()}`
         );
       }
+    } else {
+      console.log(chalk.red('✗'), chalk.red(result.error));
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // TEST 4: Scaled Pack (Subset)
+  // ═══════════════════════════════════════════════════════════
+  console.log(chalk.bold.cyan('\n┌─────────────────────────────────────────────────────────┐'));
+  console.log(chalk.bold.cyan('│  TEST 4: Scaled Pack (3 Model Subset)                   │'));
+  console.log(chalk.bold.cyan('└─────────────────────────────────────────────────────────┘\n'));
+
+  console.log(chalk.dim(`  Scale factor: ${SCALE_TEST_FACTOR}x`));
+  console.log(chalk.dim(`  Models: ${scaleModels.map(m => m.name).join(', ')}\n`));
+
+  for (const model of scaleModels) {
+    process.stdout.write(chalk.dim(`  ${model.name}... `));
+
+    const result = await runTest('scaledPack', () => testScaledPack(model, SCALE_TEST_FACTOR));
+    results.scaled.push({ model: model.name, ...result });
+
+    if (result.success) {
+      console.log(
+        chalk.green('✓'),
+        chalk.dim(`${formatBytes(result.inputSize)} → ${formatBytes(result.outputSize)}`),
+        chalk.green(`(${result.compression}% smaller, scale ${result.scale}x)`),
+        chalk.dim(`[${formatDuration(result.duration)}]`)
+      );
     } else {
       console.log(chalk.red('✗'), chalk.red(result.error));
     }
@@ -280,11 +421,14 @@ async function runTestSuite() {
   const packSuccess = results.pack.filter(r => r.success).length;
   const unpackSuccess = results.unpackPack.filter(r => r.success).length;
   const reoptSuccess = results.reoptimise.filter(r => r.success).length;
+  const scaledSuccess = results.scaled.filter(r => r.success).length;
   const total = models.length;
+  const scaledTotal = scaleModels.length;
 
   console.log(`  Pack Pipeline:      ${packSuccess}/${total} passed`);
   console.log(`  Unpack→Pack:        ${unpackSuccess}/${total} passed`);
   console.log(`  Re-optimise:        ${reoptSuccess}/${total} passed`);
+  console.log(`  Scaled Pack:        ${scaledSuccess}/${scaledTotal} passed`);
   console.log('');
 
   // Automated checks
@@ -333,6 +477,14 @@ async function runTestSuite() {
     for (const r of notSimplified) {
       console.log(chalk.dim(`      ${r.model}: ${r.polygonsAfter.toLocaleString()} polygons`));
     }
+    allPassed = false;
+  }
+
+  // Check 5: Scaled output should contain expected wrapper node
+  if (scaledSuccess === scaledTotal) {
+    console.log(chalk.green(`  ✓ Scaled tests passed (${scaledSuccess}/${scaledTotal})`));
+  } else {
+    console.log(chalk.red(`  ✗ ${scaledTotal - scaledSuccess} scaled test(s) failed`));
     allPassed = false;
   }
 
