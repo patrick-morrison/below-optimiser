@@ -19,8 +19,7 @@
             "@gltf-transform/functions": "https://esm.sh/@gltf-transform/functions@4",
             "meshoptimizer": "https://esm.sh/meshoptimizer@0.21.0",
             "three/examples/jsm/loaders/KTX2Loader.js": "https://unpkg.com/three@0.170.0/examples/jsm/loaders/KTX2Loader.js",
-            "ktx2-encoder": "https://unpkg.com/ktx2-encoder@0.5.1/dist/web/index.js?v=20260127",
-            "ktx2-encoder/gltf-transform": "https://unpkg.com/ktx2-encoder@0.5.1/dist/gltf-transform/index.js?v=20260127",
+            "ktx2-encoder": "./browser/ktx2-encoder.js?v=20260207c",
             "ktx-parse": "https://unpkg.com/ktx-parse@0.7.1/dist/ktx-parse.esm.js"
         }
     }
@@ -232,9 +231,79 @@
       border: 1px solid #334155;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
       box-sizing: border-box;
-      width: 240px;
-      min-width: 240px;
-      max-width: 240px;
+      width: min(320px, calc(100vw - 40px));
+      min-width: 260px;
+      max-width: 320px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .model-stats .tools-section {
+      margin-top: 10px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: rgba(2, 6, 23, 0.35);
+      overflow: hidden;
+    }
+
+    .model-stats .tools-toggle {
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: #cbd5e1;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .model-stats .tools-toggle::-webkit-details-marker {
+      display: none;
+    }
+
+    .model-stats .tools-toggle::after {
+      content: '▸';
+      color: #94a3b8;
+      transition: transform 0.2s ease;
+      transform-origin: center;
+    }
+
+    .model-stats .tools-section[open] .tools-toggle::after {
+      transform: rotate(90deg);
+    }
+
+    .model-stats .tools-body {
+      border-top: 1px solid rgba(51, 65, 85, 0.8);
+      padding: 8px 10px 10px;
+    }
+
+    .model-stats .optimise-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .model-stats .optimise-body .actions {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .model-stats .transform-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .model-stats .transform-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-top: 2px;
     }
 
     .model-stats .row {
@@ -283,7 +352,94 @@
     }
 
     .model-stats .actions.texture-actions {
-      flex-direction: row;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .model-stats .scale-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 0;
+      align-items: stretch;
+    }
+
+    .model-stats .scale-input-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .model-stats .scale-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .model-stats .scale-input-label {
+      font-size: 10px;
+      color: #94a3b8;
+      letter-spacing: 0.2px;
+    }
+
+    .model-stats .scale-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 7px 8px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: rgba(15, 23, 42, 0.85);
+      color: #e2e8f0;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .model-stats .scale-input:focus {
+      outline: 1px solid rgba(96, 165, 250, 0.8);
+      border-color: rgba(96, 165, 250, 0.8);
+    }
+
+    .model-stats .apply-scale-btn {
+      width: auto;
+      white-space: nowrap;
+      align-self: end;
+    }
+
+    .model-stats .orientation-controls {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .model-stats .orientation-views {
+      display: flex;
+      gap: 8px;
+    }
+
+    .model-stats .orientation-hint {
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.35;
+    }
+
+    .model-stats .action-btn.active {
+      background: rgba(96, 165, 250, 0.9);
+      border-color: rgba(147, 197, 253, 0.95);
+      color: #ffffff;
+    }
+
+    .model-stats #orientationToggleBtn.active {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgba(74, 222, 128, 0.85);
+      color: #e2e8f0;
+      box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.28);
+    }
+
+    .model-stats #orientationToggleBtn.active:hover:not(:disabled) {
+      background: rgba(51, 65, 85, 0.9);
     }
 
     .model-stats .action-btn {
@@ -395,6 +551,28 @@
       animation: spin 1s linear infinite;
     }
 
+    .optimize-overlay.overlay-spinner .spinner {
+      display: block;
+    }
+
+    .optimize-overlay.overlay-spinner .progress-meta,
+    .optimize-overlay.overlay-spinner .progress-track {
+      display: none;
+    }
+
+    .optimize-overlay.overlay-progress .spinner {
+      display: none;
+    }
+
+    .optimize-overlay.overlay-progress .progress-meta,
+    .optimize-overlay.overlay-progress .progress-track {
+      display: flex;
+    }
+
+    .optimize-overlay.overlay-progress .progress-track {
+      display: block;
+    }
+
     .status-note {
       display: flex;
       align-items: center;
@@ -412,25 +590,66 @@
     }
 
     .optimize-overlay .status {
-      margin-top: 24px;
+      margin-top: 20px;
       font-size: 18px;
       color: #e2e8f0;
       text-align: center;
+      letter-spacing: 0.01em;
     }
 
     .optimize-overlay .step {
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 14px;
       color: #94a3b8;
+      width: min(640px, 86vw);
+      min-height: 1.5em;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .optimize-overlay .progress-meta {
+      margin-top: 12px;
+      width: min(420px, 80vw);
+      display: flex;
+      justify-content: flex-end;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    #optimizePercent {
+      font-variant-numeric: tabular-nums;
+      min-width: 42px;
+      text-align: right;
+    }
+
+    .optimize-overlay .progress-track {
+      margin-top: 6px;
+      width: min(420px, 80vw);
+      height: 8px;
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .optimize-overlay .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      border-radius: 999px;
+      transition: width 0.25s ease;
     }
 
     .optimize-overlay .warning {
-      margin-top: 24px;
+      margin-top: 20px;
       font-size: 12px;
       color: #f59e0b;
-      max-width: 300px;
+      max-width: 420px;
       text-align: center;
-      line-height: 1.5;
+      line-height: 1.65;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(245, 158, 11, 0.22);
     }
 
     .optimize-overlay .warning a {
@@ -500,9 +719,17 @@
   <!-- Optimization loading overlay -->
   <div class="optimize-overlay" id="optimizeOverlay">
     <div class="spinner"></div>
+    <div class="status" id="optimizeStatus">Working...</div>
     <div class="step" id="optimizeStep">Initialising...</div>
+    <div class="progress-meta">
+      <span id="optimizePercent">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="optimizeProgressBar"></div>
+    </div>
     <div class="warning" id="optimizeWarning">
       Experimental: browser optimisation can crash on large models due to browser memory limits.<br>
+      This can take a few minutes for larger files.<br>
       Keep this tab focussed while optimising.<br>
       For a faster, more robust experience, use the CLI on
       <a href="https://github.com/patrick-morrison/below-optimiser" target="_blank"
@@ -519,17 +746,52 @@
     <div class="row"><span class="label">vram</span><span class="value" id="statVram"><span
           class="warn-icon">⚠</span>—</span></div>
     <div class="row"><span class="label">draws</span><span class="value" id="statDraws">—</span></div>
-    <div class="actions" id="actionButtons" style="display: none;">
-      <button class="action-btn primary" id="optimiseBtn">Optimise</button>
-      <button class="action-btn success" id="downloadBtn" style="display: none;">Download</button>
-    </div>
-    <div class="actions texture-actions" id="textureButtons" style="display: none; margin-top: 0; padding-top: 8px;">
-      <button class="action-btn secondary" id="downloadTexturesBtn" style="font-size: 11px; padding: 6px 10px;">↓
-        Textures</button>
-      <button class="action-btn secondary" id="uploadTexturesBtn" style="font-size: 11px; padding: 6px 10px;">↑
-        Textures</button>
-      <input type="file" id="textureInput" accept="image/*" multiple style="display: none;">
-    </div>
+    <details class="tools-section" id="optimiseSection" style="display: none;" open>
+      <summary class="tools-toggle">Optimise</summary>
+      <div class="tools-body optimise-body">
+        <div class="actions texture-actions" id="textureButtons" style="display: none;">
+          <button class="action-btn secondary" id="downloadTexturesBtn" style="font-size: 11px; padding: 6px 10px;">↓
+            Textures</button>
+          <button class="action-btn secondary" id="uploadTexturesBtn" style="font-size: 11px; padding: 6px 10px;">↑
+            Textures</button>
+          <input type="file" id="textureInput" accept="image/*" multiple style="display: none;">
+        </div>
+        <div class="transform-group" id="transformTools" style="display: none;">
+          <div class="transform-title">Scale & orientation</div>
+          <div class="scale-controls" id="scaleControls" style="display: none;">
+            <div class="scale-input-grid">
+              <div class="scale-input-group">
+                <label class="scale-input-label" for="scaleFactorInput">Scale factor</label>
+                <input class="scale-input" id="scaleFactorInput" type="number" step="0.01" min="0.000001" value="1.0"
+                  title="Global scale multiplier (e.g. 2.0 doubles size)">
+              </div>
+              <div class="scale-input-group">
+                <label class="scale-input-label" for="measuredLengthInput">Measured (m)</label>
+                <input class="scale-input" id="measuredLengthInput" type="number" step="0.001" min="0.000001"
+                  placeholder="Need active measure"
+                  title="Target measured length in metres for active 2-point measurement">
+              </div>
+              <button class="action-btn secondary apply-scale-btn" id="applyScaleBtn" type="button"
+                title="Apply scale multiplier to model and output">Scale</button>
+            </div>
+          </div>
+          <div class="orientation-controls" id="orientationControls" style="display: none;">
+            <button class="action-btn secondary" id="orientationToggleBtn" type="button"
+              title="Enable orientation edit mode">Edit orientation</button>
+            <div class="orientation-views" id="orientationViewButtons" style="display: none;">
+              <button class="action-btn secondary" id="viewFrontBtn" type="button">Front</button>
+              <button class="action-btn secondary" id="viewRightBtn" type="button">Right</button>
+              <button class="action-btn secondary" id="viewTopBtn" type="button">Top</button>
+            </div>
+            <div class="orientation-hint">Rings highlight on hover. Axis rings are camera-relative. Drag inside sphere for free orient.</div>
+          </div>
+        </div>
+        <div class="actions" id="actionButtons" style="display: none;">
+          <button class="action-btn primary" id="optimiseBtn">Optimise</button>
+          <button class="action-btn success" id="downloadBtn" style="display: none;">Download</button>
+        </div>
+      </div>
+    </details>
     <div class="cli-hint">
       Large model? Use the CLI:
       <a href="https://github.com/patrick-morrison/below-optimiser" target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -562,7 +824,7 @@
     } from '@gltf-transform/functions';
     import { KHRDracoMeshCompression, KHRTextureBasisu } from '@gltf-transform/extensions';
     import { MeshoptSimplifier } from 'meshoptimizer';
-    import { ktx2 } from 'ktx2-encoder/gltf-transform';
+    import { encodeToKTX2 } from 'ktx2-encoder';
 
     // Drag & Drop viewer
 
@@ -576,13 +838,49 @@
     let isOptimizing = false;
     let originalFileName = 'model.glb';
     let hasNewTextures = false;
+    let hasScaleAdjustments = false;
+    let hasOrientationAdjustments = false;
+    let currentScaleFactor = 1;
+    let committedScaleFactor = 1;
+    let hasPendingScaleCommit = false;
+    let isOrientationEditMode = false;
+    let previewLoadWarning = '';
+    let previewLoadWarningIsError = false;
+    let requiresReoptimisation = false;
+    let textureResizeState = {
+      checked: false,
+      maxDimension: null,
+      maxPixels: null,
+      needsDownscale: false,
+      needsWasmTexelDownscale: false,
+      needsBlockAlign: false
+    };
+    let lastOptimizationSummary = null;
     let canvasHandlersAttached = false;
     let currentProgressText = '';
+    let isSyncingScaleControls = false;
+    let lastScaleControlSource = 'scale';
+    let pendingPreviewReload = false;
+    let previewReloadInFlight = null;
+    const PREVIEW_RELOAD_RETRY_COUNT = 3;
+    const PREVIEW_RELOAD_RETRY_DELAY_MS = 220;
 
     // UI elements for optimization
     const actionButtons = document.getElementById('actionButtons');
     const optimiseBtn = document.getElementById('optimiseBtn');
     const downloadBtn = document.getElementById('downloadBtn');
+    const optimiseSection = document.getElementById('optimiseSection');
+    const transformTools = document.getElementById('transformTools');
+    const scaleControls = document.getElementById('scaleControls');
+    const scaleFactorInput = document.getElementById('scaleFactorInput');
+    const measuredLengthInput = document.getElementById('measuredLengthInput');
+    const applyScaleBtn = document.getElementById('applyScaleBtn');
+    const orientationControls = document.getElementById('orientationControls');
+    const orientationToggleBtn = document.getElementById('orientationToggleBtn');
+    const orientationViewButtons = document.getElementById('orientationViewButtons');
+    const viewFrontBtn = document.getElementById('viewFrontBtn');
+    const viewRightBtn = document.getElementById('viewRightBtn');
+    const viewTopBtn = document.getElementById('viewTopBtn');
     const textureButtons = document.getElementById('textureButtons');
     const downloadTexturesBtn = document.getElementById('downloadTexturesBtn');
     const uploadTexturesBtn = document.getElementById('uploadTexturesBtn');
@@ -593,8 +891,11 @@
     const viewToggle = document.getElementById('viewToggle');
     const modelStatus = document.getElementById('modelStatus');
     const optimizeOverlay = document.getElementById('optimizeOverlay');
+    const optimizeStatus = document.getElementById('optimizeStatus');
     const optimizeStep = document.getElementById('optimizeStep');
     const optimizeWarning = document.getElementById('optimizeWarning');
+    const optimizePercent = document.getElementById('optimizePercent');
+    const optimizeProgressBar = document.getElementById('optimizeProgressBar');
 
     // Initialize gltf-transform IO
     let io = null;
@@ -607,6 +908,52 @@
     let ktx2Scene = null;
     let ktx2Camera = null;
     let ktx2Quad = null;
+    let orientationFloor = null;
+    let orientationGizmo = null;
+    let orientationGizmoHitMesh = null;
+    let orientationGizmoAxisHitMeshes = [];
+    let orientationGizmoShellMaterial = null;
+    let orientationDragAttached = false;
+    let orientationDragTarget = null;
+    let orientationDragging = false;
+    let orientationDragMode = '';
+    let orientationHoverAxis = '';
+    let orientationActiveAxis = '';
+    let orientationHoverArcball = false;
+    let orientationDragPointerId = null;
+    let orientationDragCurrentVector = null;
+    let orientationDragUseScreenAxis = false;
+    let orientationDragHandleType = '';
+    let orientationControlsWereEnabled = null;
+    let orientationEditStartMatrix = null;
+    const orientationAxisVisuals = new Map();
+    const orientationRaycaster = new THREE.Raycaster();
+    const orientationPointerNDC = new THREE.Vector2();
+    const orientationDragLastPointer = new THREE.Vector2();
+    const orientationDragAxisScreenDir = new THREE.Vector2();
+    const orientationDragCenter = new THREE.Vector3();
+    const orientationDragVectorA = new THREE.Vector3();
+    const orientationDragVectorB = new THREE.Vector3();
+    const orientationDragAxis = new THREE.Vector3();
+    const orientationDragAxisWorld = new THREE.Vector3();
+    const orientationDragHandleAxisWorld = new THREE.Vector3();
+    const orientationDragCross = new THREE.Vector3();
+    const orientationDragPlane = new THREE.Plane();
+    const orientationDragQuat = new THREE.Quaternion();
+    const orientationDragOffset = new THREE.Vector3();
+    const orientationTempQuaternion = new THREE.Quaternion();
+    const orientationLastCameraQuaternion = new THREE.Quaternion();
+    const orientationColorWhite = new THREE.Color(0xffffff);
+    const ORIENTATION_AXIS_CENTER_EPSILON_SQ = 1e-4;
+    const ORIENTATION_AXIS_MAX_STEP_RADIANS = Math.PI / 6;
+    const ORIENTATION_AXIS_SCREEN_DRAG_SENSITIVITY = 0.012;
+    const MODEL_CONVENTION_RIGHT = new THREE.Vector3(1, 0, 0);
+    const MODEL_CONVENTION_UP = new THREE.Vector3(0, 1, 0);
+    const MODEL_CONVENTION_FRONT = new THREE.Vector3(0, 0, 1);
+    let orientationCameraSyncRaf = 0;
+    let orientationCameraSyncRunning = false;
+    let optimizeWakeLock = null;
+    let optimizeBeforeUnloadAttached = false;
 
     // Lightweight initialization for read-only operations (texture extraction, etc.)
     async function initReadOnlyIO() {
@@ -720,13 +1067,84 @@
 
     function setProgress(text) {
       if (text) {
-        currentProgressText = text;
-        progressText.textContent = text;
+        const normalized = normalizeProgressText(text);
+        if (normalized === currentProgressText) return;
+        currentProgressText = normalized;
+        progressText.textContent = normalized;
         progressText.style.display = 'block';
-        optimizeStep.textContent = text;
+        optimizeStep.textContent = normalized;
       } else {
         currentProgressText = '';
         progressText.style.display = 'none';
+        optimizeStep.textContent = 'Initialising...';
+      }
+    }
+
+    function setOptimizeStatus(text = 'Working...') {
+      if (!optimizeStatus) return;
+      optimizeStatus.textContent = text;
+    }
+
+    function normalizeProgressText(text) {
+      if (!text) return '';
+      return String(text).replace(/\s+/g, ' ').trim();
+    }
+
+    function truncateForProgress(text, max = 120) {
+      if (!text || text.length <= max) return text;
+      return `${text.slice(0, max - 1)}…`;
+    }
+
+    function formatStepLabel(stepIndex, totalSteps, label) {
+      const safeLabel = truncateForProgress(normalizeProgressText(label), 110);
+      return `Step ${stepIndex}/${totalSteps}: ${safeLabel}`;
+    }
+
+    function resetOptimizeProgress() {
+      optimizePercent.textContent = '0%';
+      optimizeProgressBar.style.width = '0%';
+    }
+
+    function setOptimizeProgress(fraction) {
+      const clamped = Math.min(1, Math.max(0, Number(fraction) || 0));
+      const percent = Math.round(clamped * 100);
+      optimizePercent.textContent = `${percent}%`;
+      optimizeProgressBar.style.width = `${(clamped * 100).toFixed(1)}%`;
+    }
+
+    async function maybeAcquireWakeLock() {
+      if (!('wakeLock' in navigator) || optimizeWakeLock) return;
+      try {
+        optimizeWakeLock = await navigator.wakeLock.request('screen');
+      } catch (err) {
+        console.warn('Wake lock not available:', err);
+      }
+    }
+
+    async function releaseWakeLock() {
+      if (!optimizeWakeLock) return;
+      try {
+        await optimizeWakeLock.release();
+      } catch (err) {
+        console.warn('Wake lock release failed:', err);
+      }
+      optimizeWakeLock = null;
+    }
+
+    function beforeUnloadHandler(event) {
+      if (!isOptimizing) return undefined;
+      event.preventDefault();
+      event.returnValue = 'Optimisation is still running.';
+      return event.returnValue;
+    }
+
+    function setBeforeUnloadGuard(enabled) {
+      if (enabled && !optimizeBeforeUnloadAttached) {
+        window.addEventListener('beforeunload', beforeUnloadHandler);
+        optimizeBeforeUnloadAttached = true;
+      } else if (!enabled && optimizeBeforeUnloadAttached) {
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+        optimizeBeforeUnloadAttached = false;
       }
     }
 
@@ -735,6 +1153,16 @@
         optimizeOverlay.classList.add('visible');
       } else {
         optimizeOverlay.classList.remove('visible');
+        setOptimizeStatus('Working...');
+      }
+    }
+
+    function setOptimizeOverlayMode(mode = 'spinner') {
+      optimizeOverlay.classList.remove('overlay-spinner', 'overlay-progress');
+      if (mode === 'progress') {
+        optimizeOverlay.classList.add('overlay-progress');
+      } else {
+        optimizeOverlay.classList.add('overlay-spinner');
       }
     }
 
@@ -754,43 +1182,122 @@
     }
 
     function updateModelStatus() {
+      const hasBaseModel = !!originalArrayBuffer;
       const hasOptimized = !!optimizedArrayBuffer;
-      let text = '';
-
-      if (hasNewTextures && hasOptimized) {
-        text = 'New texture + optimised';
-      } else if (hasNewTextures) {
-        text = 'New texture';
-      } else if (hasOptimized) {
-        text = 'Optimised';
+      const hasChanges = hasNewTextures || hasOptimized || hasScaleAdjustments || hasOrientationAdjustments || hasPendingScaleCommit;
+      if (optimiseSection) {
+        optimiseSection.style.display = hasBaseModel ? 'block' : 'none';
+        if (!hasBaseModel) {
+          optimiseSection.open = false;
+        }
       }
-
-      if (text) {
-        statusMessageText.textContent = text;
-        modelStatus.style.display = 'flex';
-      } else {
-        modelStatus.style.display = 'none';
+      if (actionButtons) {
+        actionButtons.style.display = hasBaseModel ? 'flex' : 'none';
       }
-
-      const hasChanges = hasNewTextures || hasOptimized;
-      downloadBtn.style.display = hasModel ? 'block' : 'none';
+      if (textureButtons) {
+        textureButtons.style.display = hasBaseModel ? 'grid' : 'none';
+      }
+      downloadBtn.style.display = (hasBaseModel && hasChanges) ? 'block' : 'none';
       downloadBtn.disabled = !hasChanges;
       if (hasOptimized) {
         downloadBtn.textContent = 'Download (Optimised)';
-      } else if (hasNewTextures) {
+      } else if (hasNewTextures || hasScaleAdjustments || hasOrientationAdjustments) {
         downloadBtn.textContent = 'Download (Updated)';
       } else {
         downloadBtn.textContent = 'Download';
       }
 
-      if (hasOptimized) {
-        statusMessageText.textContent = 'Optimised.';
-      } else if (hasNewTextures) {
-        statusMessageText.textContent = 'Textures updated.';
-      } else {
-        statusMessageText.textContent = 'Model ready.';
+      if (scaleControls) {
+        scaleControls.style.display = hasBaseModel ? 'flex' : 'none';
       }
+      if (transformTools) {
+        transformTools.style.display = hasBaseModel ? 'block' : 'none';
+      }
+      if (applyScaleBtn) {
+        applyScaleBtn.disabled = !hasBaseModel || isOptimizing;
+      }
+      if (orientationControls) {
+        orientationControls.style.display = hasModel ? 'flex' : 'none';
+      }
+      if (orientationToggleBtn) {
+        orientationToggleBtn.disabled = !hasModel || isOptimizing;
+      }
+      if (!hasModel && isOrientationEditMode) {
+        setOrientationEditMode(false);
+      }
+
+      if (!hasBaseModel) {
+        modelStatus.style.display = 'none';
+      } else {
+        let status = 'Model ready.';
+
+        if (hasOptimized) {
+          status = 'Optimised.';
+          if (lastOptimizationSummary?.resizedTextures) {
+            status += ` Large textures were downscaled to ${MAX_BROWSER_TEXTURE_DIMENSION}px.`;
+          }
+          if (lastOptimizationSummary?.wasmSkippedTextures > 0) {
+            status += ` ${lastOptimizationSummary.wasmSkippedTextures} texture(s) stayed original because they exceed browser KTX2 WASM limits.`;
+          }
+          if (lastOptimizationSummary?.blockAlignSkippedTextures > 0) {
+            status += ` ${lastOptimizationSummary.blockAlignSkippedTextures} texture(s) stayed original because dimensions are not multiples of 4.`;
+          }
+          if (lastOptimizationSummary?.runtimeOomSkippedTextures > 0) {
+            status += ` ${lastOptimizationSummary.runtimeOomSkippedTextures} texture(s) stayed original because the browser ran out of WASM memory during KTX2 encode.`;
+          }
+          if (hasScaleAdjustments) {
+            status += ` Global scale set to x${currentScaleFactor.toFixed(4)}.`;
+          }
+          if (hasOrientationAdjustments) {
+            status += ' Orientation updated.';
+          }
+        } else if (requiresReoptimisation) {
+          status = 'Textures updated. Re-optimise to restore full compression.';
+        } else if (hasNewTextures && hasScaleAdjustments && hasOrientationAdjustments) {
+          status = `Textures, scale, and orientation updated (x${currentScaleFactor.toFixed(4)}).`;
+        } else if (hasNewTextures && hasScaleAdjustments) {
+          status = `Textures and scale updated (x${currentScaleFactor.toFixed(4)}).`;
+        } else if (hasNewTextures && hasOrientationAdjustments) {
+          status = 'Textures and orientation updated.';
+        } else if (hasNewTextures) {
+          status = 'Textures updated.';
+        } else if (hasScaleAdjustments && hasOrientationAdjustments) {
+          status = `Scale and orientation updated (x${currentScaleFactor.toFixed(4)}).`;
+        } else if (hasScaleAdjustments) {
+          status = `Scale set to x${currentScaleFactor.toFixed(4)}.`;
+        } else if (hasOrientationAdjustments) {
+          status = 'Orientation updated.';
+        }
+
+        if (!hasOptimized) {
+          const resizeHint = getTextureResizeHint(true);
+          if (resizeHint) status += ` ${resizeHint}`;
+        }
+        if (hasPendingScaleCommit) {
+          status += ' Scale write pending.';
+        }
+
+        if (previewLoadWarning) {
+          status += ` ${previewLoadWarning}`;
+        }
+
+        statusMessageText.textContent = status;
+        modelStatus.style.display = 'flex';
+        modelStatus.classList.toggle('error', !!previewLoadWarning && !!previewLoadWarningIsError);
+      }
+
+      if (hasBaseModel) {
+        optimiseBtn.style.display = hasOptimized ? 'none' : 'block';
+        if (!isOptimizing) {
+          optimiseBtn.disabled = false;
+          optimiseBtn.textContent = requiresReoptimisation ? 'Re-optimise' : 'Optimise';
+        }
+      } else {
+        optimiseBtn.style.display = 'none';
+      }
+
       updateViewToggle();
+      syncScaleMeasurementControls('auto');
     }
 
     function showStatusMessage(text, isError = false) {
@@ -799,12 +1306,1481 @@
       modelStatus.classList.toggle('error', isError);
     }
 
-    async function reloadCurrentView() {
-      if (isOptimizing) return;
+    function clearStatsDisplay() {
+      statVram.textContent = '—';
+      statDisk.textContent = lastBlobSize != null ? fmtBytes(lastBlobSize) : '—';
+      statDraws.textContent = '—';
+      statTris.textContent = '—';
+      statTris.classList.remove('warn');
+      statDisk.classList.remove('warn');
+      statVram.classList.remove('warn');
+    }
+
+    function getMeasurementSystem() {
+      return viewer?.measurementSystem || null;
+    }
+
+    function getActiveMeasurementDistance() {
+      const measurementSystem = getMeasurementSystem();
+      if (!measurementSystem) return null;
+
+      const getDistanceFromPoints = (points) => {
+        if (!Array.isArray(points) || points.length < 2) return null;
+        const valid = points.filter((p) => p && typeof p.distanceTo === 'function');
+        if (valid.length < 2) return null;
+        const p0 = valid[valid.length - 2];
+        const p1 = valid[valid.length - 1];
+        const distance = p0.distanceTo(p1);
+        return Number.isFinite(distance) && distance > 0 ? distance : null;
+      };
+
+      const unifiedDistance = getDistanceFromPoints(
+        Array.isArray(measurementSystem.unifiedMeasurementPoints)
+          ? measurementSystem.unifiedMeasurementPoints.map((entry) => entry?.position || null)
+          : null
+      );
+      if (unifiedDistance) return unifiedDistance;
+
+      const legacySphereDistance = getDistanceFromPoints(
+        Array.isArray(measurementSystem.measurementSpheres)
+          ? measurementSystem.measurementSpheres.map((sphere) => sphere?.position || null)
+          : null
+      );
+      if (legacySphereDistance) return legacySphereDistance;
+
+      const legacyDesktopDistance = getDistanceFromPoints(
+        Array.isArray(measurementSystem.desktopMeasurementPoints)
+          ? measurementSystem.desktopMeasurementPoints.map((entry) => entry?.position || entry || null)
+          : null
+      );
+      return legacyDesktopDistance || null;
+    }
+
+    function formatControlNumber(value, digits = 6) {
+      if (!Number.isFinite(value)) return '';
+      const text = value.toFixed(digits).replace(/\.?0+$/, '');
+      return text.length ? text : '0';
+    }
+
+    function setScaleFactorInputValue(value, force = false) {
+      if (!scaleFactorInput) return;
+      if (!Number.isFinite(value) || value <= 0) return;
+      if (!force && document.activeElement === scaleFactorInput) return;
+      scaleFactorInput.value = formatControlNumber(value, 6);
+    }
+
+    function setMeasuredLengthInputValue(value, force = false) {
+      if (!measuredLengthInput) return;
+      if (!Number.isFinite(value) || value <= 0) {
+        if (!force && document.activeElement === measuredLengthInput) return;
+        measuredLengthInput.value = '';
+        return;
+      }
+      if (!force && document.activeElement === measuredLengthInput) return;
+      measuredLengthInput.value = formatControlNumber(value, 6);
+    }
+
+    function syncScaleMeasurementControls(source = 'auto') {
+      if (isSyncingScaleControls) return;
+      isSyncingScaleControls = true;
+      try {
+        const hasBaseModel = !!originalArrayBuffer;
+        const measurementDistance = hasBaseModel ? getActiveMeasurementDistance() : null;
+        const hasMeasurement = Number.isFinite(measurementDistance) && measurementDistance > 0;
+
+        if (scaleFactorInput) {
+          scaleFactorInput.disabled = !hasBaseModel || isOptimizing;
+        }
+
+        if (measuredLengthInput) {
+          measuredLengthInput.disabled = !hasBaseModel || !hasMeasurement || isOptimizing;
+          measuredLengthInput.placeholder = hasMeasurement ? '' : 'Need active measure';
+          measuredLengthInput.title = hasMeasurement
+            ? 'Target measured length in metres for active 2-point measurement'
+            : 'Create an active 2-point measurement to use this';
+        }
+
+        if (!hasBaseModel) {
+          setScaleFactorInputValue(1, false);
+          setMeasuredLengthInputValue(null, false);
+          return;
+        }
+
+        if (source === 'scale') {
+          const desiredScale = Number.parseFloat(scaleFactorInput?.value ?? '');
+          if (hasMeasurement && Number.isFinite(desiredScale) && desiredScale > 0) {
+            const projectedMeasured = measurementDistance * (desiredScale / currentScaleFactor);
+            setMeasuredLengthInputValue(projectedMeasured, true);
+          }
+          return;
+        }
+
+        if (source === 'measured') {
+          if (!hasMeasurement) return;
+          const desiredMeasured = Number.parseFloat(measuredLengthInput?.value ?? '');
+          if (Number.isFinite(desiredMeasured) && desiredMeasured > 0) {
+            const projectedScale = currentScaleFactor * (desiredMeasured / measurementDistance);
+            setScaleFactorInputValue(projectedScale, true);
+          }
+          return;
+        }
+
+        // Auto/default sync keeps any valid pending scale value, and reflects it in measured length.
+        const enteredScale = Number.parseFloat(scaleFactorInput?.value ?? '');
+        const hasEnteredScale = Number.isFinite(enteredScale) && enteredScale > 0;
+        const effectiveScale = hasEnteredScale ? enteredScale : currentScaleFactor;
+
+        if (!hasEnteredScale) {
+          setScaleFactorInputValue(currentScaleFactor, false);
+        }
+
+        if (hasMeasurement) {
+          const projectedMeasured = measurementDistance * (effectiveScale / currentScaleFactor);
+          setMeasuredLengthInputValue(projectedMeasured, false);
+        } else {
+          setMeasuredLengthInputValue(null, false);
+        }
+      } finally {
+        isSyncingScaleControls = false;
+      }
+    }
+
+    function captureMeasurementSnapshot() {
+      const measurementSystem = getMeasurementSystem();
+      const points = measurementSystem?.unifiedMeasurementPoints;
+      if (!Array.isArray(points) || points.length === 0) return null;
+
+      const capturedPoints = points
+        .map((entry) => entry?.position?.clone?.() || null)
+        .filter(Boolean)
+        .slice(0, 2);
+
+      if (capturedPoints.length === 0) return null;
+
+      const anchor = new THREE.Vector3(0, 0, 0);
+      const model = getActiveModelObject();
+      model?.getWorldPosition?.(anchor);
+
+      return {
+        points: capturedPoints,
+        anchor,
+        desktopMeasurementMode: !!measurementSystem.desktopMeasurementMode,
+        measurementSystemEnabled: measurementSystem.measurementSystemEnabled !== false
+      };
+    }
+
+    function restoreMeasurementSnapshot(snapshot, scaleFactor = 1) {
+      if (!snapshot) return;
+      const measurementSystem = getMeasurementSystem();
+      if (!measurementSystem || typeof measurementSystem.placeUnifiedMeasurementPoint !== 'function') return;
+
+      if (typeof measurementSystem.clearUnifiedMeasurement === 'function') {
+        measurementSystem.clearUnifiedMeasurement();
+      }
+
+      const validScale = Number.isFinite(scaleFactor) && scaleFactor > 0 ? scaleFactor : 1;
+      const anchor = snapshot.anchor?.clone?.() || new THREE.Vector3(0, 0, 0);
+      const points = Array.isArray(snapshot.points) ? snapshot.points : [];
+
+      for (const sourcePoint of points) {
+        const scaledPoint = sourcePoint.clone().sub(anchor).multiplyScalar(validScale).add(anchor);
+        measurementSystem.placeUnifiedMeasurementPoint(scaledPoint, 'desktop');
+      }
+
+      measurementSystem.desktopMeasurementMode = !!snapshot.desktopMeasurementMode;
+      measurementSystem.measurementSystemEnabled = !!snapshot.measurementSystemEnabled;
+      measurementSystem.updateMeasurementPanel?.();
+      measurementSystem.update?.();
+    }
+
+    function getActiveModelObject() {
+      return viewer?.belowViewer?.loadedModels?.[0]?.model || null;
+    }
+
+    function getOrientationFrame() {
+      const model = getActiveModelObject();
+      if (!model) {
+        return {
+          center: new THREE.Vector3(0, 0, 0),
+          radius: 2,
+          floorY: 0
+        };
+      }
+
+      const box = new THREE.Box3().setFromObject(model);
+      if (box.isEmpty()) {
+        return {
+          center: new THREE.Vector3(0, 0, 0),
+          radius: 2,
+          floorY: 0
+        };
+      }
+
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const radius = Math.max(1, size.length() * 0.5);
+      return {
+        center,
+        radius,
+        floorY: box.min.y
+      };
+    }
+
+    function createOrientationFloor() {
+      const frame = getOrientationFrame();
+      const size = Math.max(4, Math.ceil(frame.radius * 8));
+      const divisions = Math.max(12, Math.min(120, Math.round(size * 2)));
+      const helper = new THREE.GridHelper(size, divisions, 0x60a5fa, 0x334155);
+
+      const materials = Array.isArray(helper.material) ? helper.material : [helper.material];
+      for (const material of materials) {
+        material.transparent = true;
+        material.opacity = 0.65;
+        material.depthWrite = false;
+      }
+
+      helper.position.set(frame.center.x, frame.floorY, frame.center.z);
+      helper.renderOrder = 10;
+      return helper;
+    }
+
+    function refreshOrientationFloor() {
+      const scene = viewer?.belowViewer?.sceneManager?.scene;
+      if (!scene) return;
+
+      if (orientationFloor) {
+        scene.remove(orientationFloor);
+        orientationFloor.geometry?.dispose?.();
+        const mats = Array.isArray(orientationFloor.material) ? orientationFloor.material : [orientationFloor.material];
+        mats.forEach((m) => m?.dispose?.());
+      }
+
+      orientationFloor = createOrientationFloor();
+      orientationFloor.visible = isOrientationEditMode;
+      scene.add(orientationFloor);
+    }
+
+    function createOrientationGizmoRing(rotation, colorHex, axisName, axisLocal) {
+      const group = new THREE.Group();
+      const ringGeometry = new THREE.TorusGeometry(1, 0.014, 12, 128);
+      const material = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0.72,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const ringMesh = new THREE.Mesh(ringGeometry, material);
+      ringMesh.rotation.copy(rotation);
+      ringMesh.renderOrder = 60;
+      group.add(ringMesh);
+
+      if (!orientationAxisVisuals.has(axisName)) {
+        orientationAxisVisuals.set(axisName, {
+          baseColor: colorHex,
+          ringMaterial: null,
+          lineMaterial: null
+        });
+      }
+      const axisVisual = orientationAxisVisuals.get(axisName);
+      axisVisual.baseColor = colorHex;
+      axisVisual.ringMaterial = material;
+
+      const pickGeometry = new THREE.TorusGeometry(1, 0.16, 12, 96);
+      const pickMaterial = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const pickMesh = new THREE.Mesh(pickGeometry, pickMaterial);
+      pickMesh.rotation.copy(rotation);
+      pickMesh.userData.orientationAxis = axisName;
+      pickMesh.userData.axisLocal = axisLocal.clone();
+      pickMesh.userData.orientationHandleType = 'ring';
+      pickMesh.userData.hitPriority = 1;
+      pickMesh.renderOrder = 61;
+      group.add(pickMesh);
+      orientationGizmoAxisHitMeshes.push(pickMesh);
+
+      return group;
+    }
+
+    function createOrientationAxisLine(axisName, axisLocal, colorHex) {
+      const group = new THREE.Group();
+
+      const visibleGeometry = new THREE.CylinderGeometry(0.018, 0.018, 1.95, 10, 1, true);
+      const visibleMaterial = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0.88,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const visibleMesh = new THREE.Mesh(visibleGeometry, visibleMaterial);
+      visibleMesh.renderOrder = 62;
+
+      const createPickSegment = (offsetY) => {
+        const pickGeometry = new THREE.CylinderGeometry(0.075, 0.075, 0.85, 10, 1, true);
+        const pickMaterial = new THREE.MeshBasicMaterial({
+          transparent: true,
+          opacity: 0,
+          depthTest: false,
+          depthWrite: false,
+          side: THREE.DoubleSide
+        });
+        const pickMesh = new THREE.Mesh(pickGeometry, pickMaterial);
+        pickMesh.position.y = offsetY;
+        pickMesh.userData.orientationAxis = axisName;
+        pickMesh.userData.axisLocal = axisLocal.clone();
+        pickMesh.userData.orientationHandleType = 'line';
+        pickMesh.userData.hitPriority = 2;
+        pickMesh.renderOrder = 63;
+        orientationGizmoAxisHitMeshes.push(pickMesh);
+        return pickMesh;
+      };
+
+      if (axisName === 'x') {
+        group.rotation.z = Math.PI * 0.5;
+      } else if (axisName === 'z') {
+        group.rotation.x = Math.PI * 0.5;
+      }
+
+      if (!orientationAxisVisuals.has(axisName)) {
+        orientationAxisVisuals.set(axisName, {
+          baseColor: colorHex,
+          ringMaterial: null,
+          lineMaterial: null
+        });
+      }
+      const axisVisual = orientationAxisVisuals.get(axisName);
+      axisVisual.baseColor = colorHex;
+      axisVisual.lineMaterial = visibleMaterial;
+
+      group.add(visibleMesh);
+      // Two pick segments with a center gap avoid ambiguous axis selection at the gizmo origin.
+      group.add(createPickSegment(0.65));
+      group.add(createPickSegment(-0.65));
+      return group;
+    }
+
+    function createOrientationGizmo() {
+      const group = new THREE.Group();
+      group.name = 'OrientationTrackballGizmo';
+      group.renderOrder = 50;
+      orientationGizmoAxisHitMeshes = [];
+      orientationAxisVisuals.clear();
+
+      const shellGeometry = new THREE.SphereGeometry(1, 28, 20);
+      const shellMaterial = new THREE.MeshBasicMaterial({
+        color: 0x3e4a42,
+        transparent: true,
+        opacity: 0.053,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      orientationGizmoShellMaterial = shellMaterial;
+      const shell = new THREE.Mesh(shellGeometry, shellMaterial);
+      shell.renderOrder = 40;
+      group.add(shell);
+
+      group.add(createOrientationGizmoRing(
+        new THREE.Euler(0, Math.PI / 2, 0),
+        0x5f7f52,
+        'x',
+        MODEL_CONVENTION_RIGHT
+      ));
+      group.add(createOrientationAxisLine('x', MODEL_CONVENTION_RIGHT, 0x5f7f52));
+      group.add(createOrientationGizmoRing(
+        new THREE.Euler(Math.PI / 2, 0, 0),
+        0x8f4b3e,
+        'y',
+        MODEL_CONVENTION_UP
+      ));
+      group.add(createOrientationAxisLine('y', MODEL_CONVENTION_UP, 0x8f4b3e));
+      group.add(createOrientationGizmoRing(
+        new THREE.Euler(0, 0, 0),
+        0x4c5f73,
+        'z',
+        MODEL_CONVENTION_FRONT
+      ));
+      group.add(createOrientationAxisLine('z', MODEL_CONVENTION_FRONT, 0x4c5f73));
+
+      const hitGeometry = new THREE.SphereGeometry(0.98, 20, 14);
+      const hitMaterial = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const hitMesh = new THREE.Mesh(hitGeometry, hitMaterial);
+      hitMesh.name = 'OrientationTrackballHitArea';
+      hitMesh.renderOrder = 41;
+      group.add(hitMesh);
+
+      orientationGizmoHitMesh = hitMesh;
+      return group;
+    }
+
+    function disposeOrientationGizmo() {
+      const scene = viewer?.belowViewer?.sceneManager?.scene;
+      if (scene && orientationGizmo) {
+        scene.remove(orientationGizmo);
+      }
+      if (orientationGizmo) {
+        orientationGizmo.traverse((obj) => {
+          if (obj.geometry) obj.geometry.dispose?.();
+          if (obj.material) {
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach((m) => m?.dispose?.());
+          }
+        });
+      }
+      orientationGizmo = null;
+      orientationGizmoHitMesh = null;
+      orientationGizmoAxisHitMeshes = [];
+      orientationAxisVisuals.clear();
+      orientationGizmoShellMaterial = null;
+      orientationHoverAxis = '';
+      orientationActiveAxis = '';
+      orientationHoverArcball = false;
+    }
+
+    function refreshOrientationGizmo() {
+      const scene = viewer?.belowViewer?.sceneManager?.scene;
+      const model = getActiveModelObject();
+      if (!scene || !model) {
+        disposeOrientationGizmo();
+        return;
+      }
+
+      if (!orientationGizmo) {
+        orientationGizmo = createOrientationGizmo();
+        scene.add(orientationGizmo);
+      }
+
+      const frame = getOrientationFrame();
+      const gizmoRadius = Math.max(0.25, frame.radius * 0.22);
+      orientationGizmo.position.copy(frame.center);
+      orientationGizmo.scale.setScalar(gizmoRadius);
+      const camera = viewer?.belowViewer?.cameraManager?.getCamera?.();
+      if (camera) {
+        orientationGizmo.quaternion.copy(camera.quaternion);
+        orientationLastCameraQuaternion.copy(camera.quaternion);
+      } else {
+        model.getWorldQuaternion(orientationTempQuaternion);
+        orientationGizmo.quaternion.copy(orientationTempQuaternion);
+      }
+      orientationGizmo.visible = isOrientationEditMode;
+      updateOrientationGizmoVisualState();
+    }
+
+    function updateOrientationGizmoVisualState() {
+      for (const [axisName, visuals] of orientationAxisVisuals.entries()) {
+        const baseColor = visuals?.baseColor;
+        const ringMaterial = visuals?.ringMaterial;
+        const lineMaterial = visuals?.lineMaterial;
+        if (!Number.isFinite(baseColor)) continue;
+
+        const isActive = orientationActiveAxis && axisName === orientationActiveAxis;
+        const isHover = !isActive && orientationHoverAxis && axisName === orientationHoverAxis;
+
+        if (ringMaterial) {
+          ringMaterial.color.setHex(baseColor);
+          ringMaterial.opacity = 0.72;
+          if (isHover) {
+            ringMaterial.opacity = 1.0;
+            ringMaterial.color.lerp(orientationColorWhite, 0.2);
+          }
+          if (isActive) {
+            ringMaterial.opacity = 1.0;
+            ringMaterial.color.lerp(orientationColorWhite, 0.45);
+          }
+        }
+
+        if (lineMaterial) {
+          lineMaterial.color.setHex(baseColor);
+          lineMaterial.opacity = 0.88;
+          if (isHover) {
+            lineMaterial.opacity = 1.0;
+            lineMaterial.color.lerp(orientationColorWhite, 0.2);
+          }
+          if (isActive) {
+            lineMaterial.opacity = 1.0;
+            lineMaterial.color.lerp(orientationColorWhite, 0.45);
+          }
+        }
+      }
+
+      if (orientationGizmoShellMaterial) {
+        orientationGizmoShellMaterial.color.setHex(0x3e4a42);
+        orientationGizmoShellMaterial.opacity = 0.1;
+        if (orientationHoverArcball) {
+          orientationGizmoShellMaterial.opacity = 0.183;
+        }
+        if (orientationDragMode === 'arcball' && orientationDragging) {
+          orientationGizmoShellMaterial.opacity = 0.233;
+          orientationGizmoShellMaterial.color.setHex(0x59675d);
+        }
+      }
+    }
+
+    function syncOrientationGizmoToCamera() {
+      if (!isOrientationEditMode || !orientationGizmo || orientationDragging) return;
+      const camera = viewer?.belowViewer?.cameraManager?.getCamera?.();
+      if (!camera) return;
+
+      const dot = Math.abs(orientationLastCameraQuaternion.dot(camera.quaternion));
+      if (dot > 0.999999) return;
+
+      orientationGizmo.quaternion.copy(camera.quaternion);
+      orientationLastCameraQuaternion.copy(camera.quaternion);
+    }
+
+    function startOrientationCameraSyncLoop() {
+      if (orientationCameraSyncRunning) return;
+      orientationCameraSyncRunning = true;
+
+      const tick = () => {
+        orientationCameraSyncRaf = window.requestAnimationFrame(tick);
+        syncOrientationGizmoToCamera();
+      };
+
+      orientationCameraSyncRaf = window.requestAnimationFrame(tick);
+    }
+
+    function setOrientationCursor(active, dragging = false) {
+      const canvas = orientationDragTarget || viewerContainer.querySelector('canvas');
+      if (!canvas) return;
+      if (!active) {
+        canvas.style.cursor = '';
+        return;
+      }
+      canvas.style.cursor = dragging ? 'grabbing' : 'grab';
+    }
+
+    function setOrientationRayFromEvent(event, targetElement, camera) {
+      const rect = targetElement?.getBoundingClientRect?.();
+      if (!rect || rect.width <= 0 || rect.height <= 0) return false;
+
+      orientationPointerNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      orientationPointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      orientationRaycaster.setFromCamera(orientationPointerNDC, camera);
+      return true;
+    }
+
+    function getOrientationAxisHit(event, camera, targetElement) {
+      if (!orientationGizmoAxisHitMeshes.length) return null;
+      if (!setOrientationRayFromEvent(event, targetElement, camera)) return null;
+      const hits = orientationRaycaster.intersectObjects(orientationGizmoAxisHitMeshes, false);
+      if (!hits.length) return null;
+
+      let bestHit = hits[0];
+      let bestPriority = Number.isFinite(bestHit.object?.userData?.hitPriority)
+        ? bestHit.object.userData.hitPriority
+        : 0;
+
+      for (let i = 1; i < hits.length; i++) {
+        const hit = hits[i];
+        const priority = Number.isFinite(hit.object?.userData?.hitPriority)
+          ? hit.object.userData.hitPriority
+          : 0;
+
+        if (priority > bestPriority || (priority === bestPriority && hit.distance < bestHit.distance)) {
+          bestHit = hit;
+          bestPriority = priority;
+        }
+      }
+
+      return bestHit;
+    }
+
+    function getOrientationRotationAxisLocal(axisName, handleType, handleAxisLocal) {
+      if (handleType === 'line') {
+        // Viewport-style behaviour for line handles:
+        // - horizontal line (x) acts like turntable yaw (about camera up)
+        // - vertical line (y) acts like pitch (about camera right)
+        if (axisName === 'x') return MODEL_CONVENTION_UP;
+        if (axisName === 'y') return MODEL_CONVENTION_RIGHT;
+      }
+      return handleAxisLocal;
+    }
+
+    function getOrientationAxisScreenDirection(camera, targetElement, axisWorld, outDir) {
+      const rect = targetElement?.getBoundingClientRect?.();
+      if (!rect || rect.width <= 0 || rect.height <= 0) return false;
+
+      const axisLen = Math.max(0.001, orientationGizmo?.scale?.x || 1);
+      const centerNDC = orientationDragCenter.clone().project(camera);
+      const axisPointNDC = orientationDragCenter.clone().addScaledVector(axisWorld, axisLen).project(camera);
+
+      const x0 = (centerNDC.x * 0.5 + 0.5) * rect.width;
+      const y0 = (-centerNDC.y * 0.5 + 0.5) * rect.height;
+      const x1 = (axisPointNDC.x * 0.5 + 0.5) * rect.width;
+      const y1 = (-axisPointNDC.y * 0.5 + 0.5) * rect.height;
+
+      outDir.set(x1 - x0, y1 - y0);
+      const lenSq = outDir.lengthSq();
+      if (!Number.isFinite(lenSq) || lenSq < 1e-6) return false;
+      outDir.multiplyScalar(1 / Math.sqrt(lenSq));
+      return true;
+    }
+
+    function getOrientationArcballHit(event, camera, targetElement) {
+      if (!orientationGizmoHitMesh) return null;
+      if (!setOrientationRayFromEvent(event, targetElement, camera)) return null;
+      const hits = orientationRaycaster.intersectObject(orientationGizmoHitMesh, false);
+      return hits.length ? hits[0] : null;
+    }
+
+    function getOrientationVectorOnAxisPlane(event, camera, targetElement, axisWorld, outVector) {
+      // Primary path: use arcball sphere hit and project to plane orthogonal to axis.
+      // This is much more stable than direct ray-plane intersection near grazing angles.
+      const arcballHit = getOrientationArcballHit(event, camera, targetElement);
+      if (arcballHit?.point) {
+        outVector.copy(arcballHit.point).sub(orientationDragCenter).projectOnPlane(axisWorld);
+        let lenSq = outVector.lengthSq();
+        if (Number.isFinite(lenSq) && lenSq >= ORIENTATION_AXIS_CENTER_EPSILON_SQ) {
+          outVector.multiplyScalar(1 / Math.sqrt(lenSq));
+          return true;
+        }
+      }
+
+      // Fallback: direct ray-plane solve.
+      if (!setOrientationRayFromEvent(event, targetElement, camera)) return false;
+      orientationDragPlane.setFromNormalAndCoplanarPoint(axisWorld, orientationDragCenter);
+      if (!orientationRaycaster.ray.intersectPlane(orientationDragPlane, outVector)) return false;
+      outVector.sub(orientationDragCenter).projectOnPlane(axisWorld);
+      const lenSq = outVector.lengthSq();
+      if (!Number.isFinite(lenSq) || lenSq < ORIENTATION_AXIS_CENTER_EPSILON_SQ) return false;
+      outVector.multiplyScalar(1 / Math.sqrt(lenSq));
+      return true;
+    }
+
+    function rotateObjectAroundWorldPoint(object, point, axis, angle) {
+      if (!object) return;
+      orientationDragQuat.setFromAxisAngle(axis, angle);
+      orientationDragOffset.copy(object.position).sub(point).applyQuaternion(orientationDragQuat);
+      object.position.copy(point).add(orientationDragOffset);
+      object.quaternion.premultiply(orientationDragQuat);
+      object.updateMatrixWorld(true);
+    }
+
+    function endOrientationDrag() {
+      if (orientationDragTarget && orientationDragPointerId !== null && typeof orientationDragTarget.releasePointerCapture === 'function') {
+        try {
+          orientationDragTarget.releasePointerCapture(orientationDragPointerId);
+        } catch (_) {
+          // ignore releasePointerCapture failures
+        }
+      }
+      const controls = viewer?.belowViewer?.cameraManager?.getControls?.();
+      if (controls && orientationControlsWereEnabled !== null && 'enabled' in controls) {
+        controls.enabled = orientationControlsWereEnabled;
+      }
+      orientationControlsWereEnabled = null;
+      orientationDragging = false;
+      orientationDragMode = '';
+      orientationActiveAxis = '';
+      orientationDragPointerId = null;
+      orientationDragCurrentVector = null;
+      orientationDragUseScreenAxis = false;
+      orientationDragHandleType = '';
+      orientationHoverArcball = false;
+      setOrientationCursor(false, false);
+      updateOrientationGizmoVisualState();
+      if (isOrientationEditMode) {
+        refreshOrientationFloor();
+        refreshOrientationGizmo();
+      }
+    }
+
+    function handleOrientationPointerDown(event) {
+      if (!isOrientationEditMode) return;
+      if (event.button !== 0) return;
+      if (orientationDragPointerId !== null && orientationDragPointerId !== event.pointerId) return;
+
+      const model = getActiveModelObject();
+      const camera = viewer?.belowViewer?.cameraManager?.getCamera?.();
+      const controls = viewer?.belowViewer?.cameraManager?.getControls?.();
+      const target = orientationDragTarget || event.currentTarget;
+      if (!model || !camera || !target) return;
+
+      const axisHit = getOrientationAxisHit(event, camera, target);
+      const arcballHit = axisHit ? null : getOrientationArcballHit(event, camera, target);
+      if (!axisHit && !arcballHit) {
+        orientationHoverAxis = '';
+        orientationHoverArcball = false;
+        setOrientationCursor(false, false);
+        updateOrientationGizmoVisualState();
+        return;
+      }
+
+      orientationDragging = true;
+      orientationDragPointerId = event.pointerId;
+      orientationDragCenter.copy(orientationGizmo.position);
+
+      if (axisHit) {
+        orientationDragMode = 'axis';
+        orientationActiveAxis = axisHit.object?.userData?.orientationAxis || '';
+        orientationDragHandleType = axisHit.object?.userData?.orientationHandleType || 'ring';
+        orientationHoverAxis = orientationActiveAxis;
+        orientationHoverArcball = false;
+        const axisLocal = axisHit.object?.userData?.axisLocal;
+        const cameraQuaternion = camera?.quaternion;
+        const safeAxisLocal = axisLocal instanceof THREE.Vector3 ? axisLocal : new THREE.Vector3(0, 1, 0);
+        const rotationAxisLocal = getOrientationRotationAxisLocal(
+          orientationActiveAxis,
+          orientationDragHandleType,
+          safeAxisLocal
+        );
+
+        orientationDragHandleAxisWorld
+          .copy(safeAxisLocal)
+          .applyQuaternion(cameraQuaternion || orientationTempQuaternion.identity())
+          .normalize();
+        orientationDragAxisWorld
+          .copy(rotationAxisLocal)
+          .applyQuaternion(cameraQuaternion || orientationTempQuaternion.identity())
+          .normalize();
+
+        orientationDragUseScreenAxis = false;
+        if (orientationDragHandleType === 'line') {
+          orientationDragUseScreenAxis = getOrientationAxisScreenDirection(
+            camera,
+            target,
+            orientationDragHandleAxisWorld,
+            orientationDragAxisScreenDir
+          );
+        }
+
+        if (!orientationDragUseScreenAxis) {
+          if (!getOrientationVectorOnAxisPlane(event, camera, target, orientationDragAxisWorld, orientationDragVectorA)) {
+            orientationDragging = false;
+            orientationDragPointerId = null;
+            orientationDragMode = '';
+            orientationActiveAxis = '';
+            orientationDragHandleType = '';
+            orientationHoverAxis = '';
+            orientationHoverArcball = false;
+            updateOrientationGizmoVisualState();
+            return;
+          }
+          orientationDragCurrentVector = orientationDragVectorA.clone();
+        } else {
+          orientationDragCurrentVector = null;
+          orientationDragLastPointer.set(event.clientX, event.clientY);
+        }
+      } else {
+        orientationDragMode = 'arcball';
+        orientationActiveAxis = '';
+        orientationDragHandleType = '';
+        orientationHoverAxis = '';
+        orientationHoverArcball = true;
+        orientationDragUseScreenAxis = false;
+        orientationDragCurrentVector = orientationDragVectorA.copy(arcballHit.point).sub(orientationDragCenter).normalize().clone();
+      }
+
+      if (controls && 'enabled' in controls) {
+        orientationControlsWereEnabled = controls.enabled;
+        controls.enabled = false;
+      } else {
+        orientationControlsWereEnabled = null;
+      }
+      setOrientationCursor(true, true);
+      updateOrientationGizmoVisualState();
+
+      if (target && typeof target.setPointerCapture === 'function') {
+        try {
+          target.setPointerCapture(event.pointerId);
+        } catch (_) {
+          // ignore setPointerCapture failures
+        }
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+
+    function handleOrientationPointerMove(event) {
+      if (!isOrientationEditMode) return;
+
+      const camera = viewer?.belowViewer?.cameraManager?.getCamera?.();
+      const target = orientationDragTarget || event.currentTarget;
+      if (!camera || !target) return;
+
+      if (!orientationDragging) {
+        const axisHover = getOrientationAxisHit(event, camera, target);
+        const arcballHover = axisHover ? null : getOrientationArcballHit(event, camera, target);
+        orientationHoverAxis = axisHover?.object?.userData?.orientationAxis || '';
+        orientationHoverArcball = !orientationHoverAxis && !!arcballHover;
+        setOrientationCursor(!!(axisHover || arcballHover), false);
+        updateOrientationGizmoVisualState();
+        return;
+      }
+
+      const model = getActiveModelObject();
+      if (!model) return;
+      if (orientationDragPointerId !== null && event.pointerId !== orientationDragPointerId) return;
+
+      if (orientationDragMode === 'axis') {
+        if (orientationDragUseScreenAxis) {
+          const dx = event.clientX - orientationDragLastPointer.x;
+          const dy = event.clientY - orientationDragLastPointer.y;
+          orientationDragLastPointer.set(event.clientX, event.clientY);
+
+          const axisDelta = dx * orientationDragAxisScreenDir.x + dy * orientationDragAxisScreenDir.y;
+          if (!Number.isFinite(axisDelta) || Math.abs(axisDelta) < 0.01) return;
+
+          let signedAngle = axisDelta * ORIENTATION_AXIS_SCREEN_DRAG_SENSITIVITY;
+          if (orientationDragHandleType === 'line' && orientationActiveAxis === 'y') {
+            signedAngle = -signedAngle;
+          }
+          signedAngle = THREE.MathUtils.clamp(
+            signedAngle,
+            -ORIENTATION_AXIS_MAX_STEP_RADIANS,
+            ORIENTATION_AXIS_MAX_STEP_RADIANS
+          );
+          if (!Number.isFinite(signedAngle) || Math.abs(signedAngle) < 0.0001) return;
+
+          rotateObjectAroundWorldPoint(model, orientationDragCenter, orientationDragAxisWorld, signedAngle);
+        } else {
+          if (!getOrientationVectorOnAxisPlane(event, camera, target, orientationDragAxisWorld, orientationDragVectorB)) {
+            return;
+          }
+          if (!orientationDragCurrentVector) {
+            orientationDragCurrentVector = orientationDragVectorB.clone();
+            return;
+          }
+
+          const dot = THREE.MathUtils.clamp(orientationDragCurrentVector.dot(orientationDragVectorB), -1, 1);
+          orientationDragCross.crossVectors(orientationDragCurrentVector, orientationDragVectorB);
+          const signedAngle = Math.atan2(orientationDragCross.dot(orientationDragAxisWorld), dot);
+          if (!Number.isFinite(signedAngle) || Math.abs(signedAngle) < 0.0001) return;
+          if (Math.abs(signedAngle) > ORIENTATION_AXIS_MAX_STEP_RADIANS) {
+            orientationDragCurrentVector.copy(orientationDragVectorB);
+            return;
+          }
+
+          rotateObjectAroundWorldPoint(model, orientationDragCenter, orientationDragAxisWorld, signedAngle);
+          orientationDragCurrentVector.copy(orientationDragVectorB);
+        }
+      } else {
+        const hit = getOrientationArcballHit(event, camera, target);
+        if (!hit) return;
+
+        orientationDragVectorB.copy(hit.point).sub(orientationDragCenter).normalize();
+        if (!orientationDragCurrentVector) {
+          orientationDragCurrentVector = orientationDragVectorB.clone();
+          return;
+        }
+
+        const dot = THREE.MathUtils.clamp(orientationDragCurrentVector.dot(orientationDragVectorB), -1, 1);
+        const angle = Math.acos(dot);
+        if (!Number.isFinite(angle) || angle < 0.0001) return;
+
+        orientationDragAxis.crossVectors(orientationDragCurrentVector, orientationDragVectorB);
+        const axisLenSq = orientationDragAxis.lengthSq();
+        if (!Number.isFinite(axisLenSq) || axisLenSq < 1e-10) return;
+
+        orientationDragAxis.normalize();
+        rotateObjectAroundWorldPoint(model, orientationDragCenter, orientationDragAxis, angle);
+        orientationDragCurrentVector.copy(orientationDragVectorB);
+      }
+
+      if (orientationGizmo) {
+        const currentCamera = viewer?.belowViewer?.cameraManager?.getCamera?.();
+        if (currentCamera) {
+          orientationGizmo.quaternion.copy(currentCamera.quaternion);
+        } else {
+          model.getWorldQuaternion(orientationTempQuaternion);
+          orientationGizmo.quaternion.copy(orientationTempQuaternion);
+        }
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+
+    function handleOrientationPointerLeave() {
+      if (!orientationDragging) {
+        orientationHoverAxis = '';
+        orientationHoverArcball = false;
+        setOrientationCursor(false, false);
+        updateOrientationGizmoVisualState();
+      }
+    }
+
+    function handleOrientationPointerUp(event) {
+      if (!isOrientationEditMode) return;
+      if (!orientationDragging) return;
+      if (orientationDragPointerId !== null && event.pointerId !== orientationDragPointerId) return;
+      const didDrag = orientationDragging;
+      endOrientationDrag();
+      if (didDrag) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }
+
+    function attachOrientationDragHandlers() {
+      if (orientationDragAttached) return;
+      const targetElement = viewerContainer.querySelector('canvas');
+      if (!targetElement) return;
+      orientationDragTarget = targetElement;
+      targetElement.addEventListener('pointerdown', handleOrientationPointerDown, true);
+      targetElement.addEventListener('pointermove', handleOrientationPointerMove, true);
+      targetElement.addEventListener('pointerup', handleOrientationPointerUp, true);
+      targetElement.addEventListener('pointercancel', handleOrientationPointerUp, true);
+      targetElement.addEventListener('pointerleave', handleOrientationPointerLeave, true);
+      orientationDragAttached = true;
+    }
+
+    function detachOrientationDragHandlers() {
+      const targetElement = orientationDragTarget;
+      if (!targetElement || !orientationDragAttached) return;
+      targetElement.removeEventListener('pointerdown', handleOrientationPointerDown, true);
+      targetElement.removeEventListener('pointermove', handleOrientationPointerMove, true);
+      targetElement.removeEventListener('pointerup', handleOrientationPointerUp, true);
+      targetElement.removeEventListener('pointercancel', handleOrientationPointerUp, true);
+      targetElement.removeEventListener('pointerleave', handleOrientationPointerLeave, true);
+      orientationDragAttached = false;
+      orientationDragTarget = null;
+      endOrientationDrag();
+    }
+
+    function setOrientationView(view) {
+      if (!isOrientationEditMode) return;
+      const camera = viewer?.belowViewer?.cameraManager?.getCamera?.();
+      const controls = viewer?.belowViewer?.cameraManager?.getControls?.();
+      if (!camera) return;
+
+      const frame = getOrientationFrame();
+      const distance = Math.max(2, frame.radius * 2.4);
+      const target = frame.center.clone();
+      const pos = target.clone();
+
+      if (view === 'front') {
+        pos.addScaledVector(MODEL_CONVENTION_FRONT, distance);
+        camera.up.copy(MODEL_CONVENTION_UP);
+      } else if (view === 'right') {
+        pos.addScaledVector(MODEL_CONVENTION_RIGHT, distance);
+        camera.up.copy(MODEL_CONVENTION_UP);
+      } else if (view === 'top') {
+        pos.addScaledVector(MODEL_CONVENTION_UP, distance);
+        camera.up.set(0, 0, -1);
+      }
+
+      camera.position.copy(pos);
+      camera.lookAt(target);
+      if (controls) {
+        controls.target.copy(target);
+        controls.update();
+      }
+      refreshOrientationGizmo();
+      updateCameraSnippet();
+    }
+
+    function setOrientationEditMode(active) {
+      if (isOrientationEditMode === active) return;
+
+      const camera = viewer?.belowViewer?.cameraManager?.getCamera?.();
+      const controls = viewer?.belowViewer?.cameraManager?.getControls?.();
+      if (!camera) {
+        isOrientationEditMode = false;
+        detachOrientationDragHandlers();
+        orientationEditStartMatrix = null;
+        if (orientationFloor) orientationFloor.visible = false;
+        if (orientationGizmo) orientationGizmo.visible = false;
+        orientationToggleBtn.textContent = 'Edit orientation';
+        orientationToggleBtn.classList.remove('active');
+        orientationViewButtons.style.display = 'none';
+        setOrientationCursor(false, false);
+        return;
+      }
+      if (active && !hasModel) return;
+
+      isOrientationEditMode = active;
+
+      if (active) {
+        attachOrientationDragHandlers();
+        if (!orientationDragAttached) {
+          isOrientationEditMode = false;
+          orientationEditStartMatrix = null;
+          orientationToggleBtn.textContent = 'Edit orientation';
+          orientationToggleBtn.classList.remove('active');
+          orientationViewButtons.style.display = 'none';
+          return;
+        }
+        const model = getActiveModelObject();
+        if (model) {
+          model.updateMatrixWorld(true);
+          orientationEditStartMatrix = model.matrixWorld.clone();
+        } else {
+          orientationEditStartMatrix = null;
+        }
+        setOrientationCursor(false, false);
+        refreshOrientationFloor();
+        refreshOrientationGizmo();
+        if (camera) orientationLastCameraQuaternion.copy(camera.quaternion);
+        if (orientationFloor) orientationFloor.visible = true;
+        if (orientationGizmo) orientationGizmo.visible = true;
+      } else {
+        detachOrientationDragHandlers();
+        orientationEditStartMatrix = null;
+        setOrientationCursor(false, false);
+        if (orientationFloor) orientationFloor.visible = false;
+        if (orientationGizmo) orientationGizmo.visible = false;
+        controls?.update?.();
+      }
+
+      orientationToggleBtn.textContent = isOrientationEditMode ? 'Apply orientation' : 'Edit orientation';
+      orientationToggleBtn.title = isOrientationEditMode
+        ? 'Apply current orientation changes'
+        : 'Enable orientation edit mode';
+      orientationToggleBtn.classList.toggle('active', isOrientationEditMode);
+      orientationViewButtons.style.display = isOrientationEditMode ? 'flex' : 'none';
+      if (isOrientationEditMode && optimiseSection) {
+        optimiseSection.open = true;
+      }
+    }
+
+    function getNodeLocalMatrix(node) {
+      const matrixValues = node?.getMatrix?.();
+      if (Array.isArray(matrixValues) && matrixValues.length === 16) {
+        return new THREE.Matrix4().fromArray(matrixValues);
+      }
+
+      const translation = node?.getTranslation?.() || [0, 0, 0];
+      const rotation = node?.getRotation?.() || [0, 0, 0, 1];
+      const scale = node?.getScale?.() || [1, 1, 1];
+      return new THREE.Matrix4().compose(
+        new THREE.Vector3(translation[0] || 0, translation[1] || 0, translation[2] || 0),
+        new THREE.Quaternion(rotation[0] || 0, rotation[1] || 0, rotation[2] || 0, rotation[3] || 1),
+        new THREE.Vector3(scale[0] || 1, scale[1] || 1, scale[2] || 1)
+      );
+    }
+
+    function setNodeLocalMatrix(node, matrix) {
+      if (!node || !matrix) return false;
+      const values = Array.from(matrix.elements);
+
+      if (typeof node.setMatrix === 'function') {
+        node.setMatrix(values);
+        return true;
+      }
+
+      if (
+        typeof node.setTranslation === 'function' &&
+        typeof node.setRotation === 'function' &&
+        typeof node.setScale === 'function'
+      ) {
+        const t = new THREE.Vector3();
+        const r = new THREE.Quaternion();
+        const s = new THREE.Vector3();
+        matrix.decompose(t, r, s);
+        node.setTranslation([t.x, t.y, t.z]);
+        node.setRotation([r.x, r.y, r.z, r.w]);
+        node.setScale([s.x, s.y, s.z]);
+        return true;
+      }
+
+      return false;
+    }
+
+    function applyOrientationDeltaToNode(node, deltaMatrix, seen) {
+      if (!node || seen.has(node)) return false;
+      seen.add(node);
+      const baseMatrix = getNodeLocalMatrix(node);
+      const nextMatrix = new THREE.Matrix4().multiplyMatrices(deltaMatrix, baseMatrix);
+      return setNodeLocalMatrix(node, nextMatrix);
+    }
+
+    function applyOrientationDeltaToDocument(gltfDocument, deltaMatrix) {
+      const root = gltfDocument.getRoot();
+      const seen = new Set();
+      let touchedRoots = 0;
+
+      for (const scene of root.listScenes()) {
+        const children = scene.listChildren ? scene.listChildren() : [];
+        for (const node of children) {
+          if (applyOrientationDeltaToNode(node, deltaMatrix, seen)) {
+            touchedRoots++;
+          }
+        }
+      }
+
+      if (touchedRoots === 0) {
+        for (const node of root.listNodes()) {
+          const parents = typeof node.listParents === 'function' ? node.listParents() : [];
+          if (parents.length === 0 && applyOrientationDeltaToNode(node, deltaMatrix, seen)) {
+            touchedRoots++;
+          }
+        }
+      }
+
+      if (touchedRoots === 0) {
+        for (const node of root.listNodes()) {
+          if (applyOrientationDeltaToNode(node, deltaMatrix, seen)) {
+            touchedRoots++;
+            break;
+          }
+        }
+      }
+    }
+
+    function isNearlyIdentityMatrix(matrix, epsilon = 1e-6) {
+      if (!matrix) return true;
+      const e = matrix.elements;
+      const identity = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+      ];
+      for (let i = 0; i < 16; i++) {
+        if (Math.abs(e[i] - identity[i]) > epsilon) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    async function rewriteBufferWithOrientation(sourceBuffer, deltaMatrix, readIO, label = 'model') {
+      setProgress(`Reading ${label}...`);
+      const gltfDocument = await readIO.readBinary(new Uint8Array(sourceBuffer));
+      applyOrientationDeltaToDocument(gltfDocument, deltaMatrix);
+
+      const usesDraco = gltfDocument.getRoot().listExtensionsUsed()
+        .some((ext) => ext.extensionName === KHRDracoMeshCompression.EXTENSION_NAME);
+      if (usesDraco) {
+        await ensureDracoEncoderForWrite(readIO);
+      }
+
+      setProgress(`Writing ${label}...`);
+      const updatedGlb = await readIO.writeBinary(gltfDocument);
+      return updatedGlb.buffer;
+    }
+
+    async function applyOrientationEdits() {
+      if (!isOrientationEditMode || isOptimizing || !originalArrayBuffer) return true;
+
+      const model = getActiveModelObject();
+      const startMatrix = orientationEditStartMatrix?.clone?.();
+      if (!model || !startMatrix) {
+        setOrientationEditMode(false);
+        return false;
+      }
+
+      model.updateMatrixWorld(true);
+      const endMatrix = model.matrixWorld.clone();
+      const inverseStart = startMatrix.clone();
+      if (typeof inverseStart.invert === 'function') {
+        inverseStart.invert();
+      } else if (typeof inverseStart.getInverse === 'function') {
+        inverseStart.getInverse(startMatrix);
+      }
+      const deltaMatrix = new THREE.Matrix4().multiplyMatrices(endMatrix, inverseStart);
+
+      setOrientationEditMode(false);
+
+      if (isNearlyIdentityMatrix(deltaMatrix)) {
+        showStatusMessage('Orientation unchanged.', false);
+        updateModelStatus();
+        return true;
+      }
+
+      showOptimizeOverlay(true);
+      setOptimizeOverlayMode('progress');
+      setOptimizeWarningVisible(false);
+      setOptimizeStatus('Applying orientation');
+      resetOptimizeProgress();
+      setOptimizeProgress(0);
+
+      try {
+        const readIO = await initReadOnlyIO();
+        await commitPendingScaleToBuffers(readIO);
+        let progress = 0.1;
+        setOptimizeProgress(progress);
+
+        originalArrayBuffer = await rewriteBufferWithOrientation(originalArrayBuffer, deltaMatrix, readIO, 'source model');
+        progress = optimizedArrayBuffer ? 0.5 : 0.82;
+        setOptimizeProgress(progress);
+
+        if (optimizedArrayBuffer) {
+          optimizedArrayBuffer = await rewriteBufferWithOrientation(optimizedArrayBuffer, deltaMatrix, readIO, 'optimised model');
+          progress = 0.86;
+          setOptimizeProgress(progress);
+        }
+
+        const activeBuffer = (isShowingOptimized && optimizedArrayBuffer) ? optimizedArrayBuffer : originalArrayBuffer;
+        let previewLoaded = await loadModelFromArrayBuffer(activeBuffer, true);
+        if (!previewLoaded) {
+          previewLoaded = await reloadCurrentView({
+            retries: PREVIEW_RELOAD_RETRY_COUNT,
+            retryDelayMs: PREVIEW_RELOAD_RETRY_DELAY_MS,
+            onlyIfPending: true
+          });
+        }
+        hasOrientationAdjustments = true;
+
+        setOptimizeProgress(1);
+        if (previewLoaded) {
+          fitCameraToActiveModel();
+          showStatusMessage('Orientation applied.', false);
+        } else {
+          showStatusMessage('Orientation applied. Preview reload pending; return to this tab to retry rendering.', false);
+        }
+        updateModelStatus();
+        return true;
+      } catch (err) {
+        console.error('Failed to apply orientation:', err);
+        alert('Failed to apply orientation: ' + err.message);
+        return false;
+      } finally {
+        setProgress(null);
+        showOptimizeOverlay(false);
+      }
+    }
+
+    function applyScaleToNode(node, factor, seen) {
+      if (!node || seen.has(node)) return false;
+      seen.add(node);
+
+      const scale = node.getScale() || [1, 1, 1];
+      const sx = Number.isFinite(scale[0]) ? scale[0] : 1;
+      const sy = Number.isFinite(scale[1]) ? scale[1] : 1;
+      const sz = Number.isFinite(scale[2]) ? scale[2] : 1;
+      node.setScale([sx * factor, sy * factor, sz * factor]);
+      return true;
+    }
+
+    function applyScaleToDocument(gltfDocument, factor) {
+      const root = gltfDocument.getRoot();
+      const seen = new Set();
+      let scaledRoots = 0;
+
+      for (const scene of root.listScenes()) {
+        const children = scene.listChildren ? scene.listChildren() : [];
+        for (const node of children) {
+          if (applyScaleToNode(node, factor, seen)) {
+            scaledRoots++;
+          }
+        }
+      }
+
+      // Fallback: if no scene roots were scaled, scale parentless nodes only.
+      if (scaledRoots === 0) {
+        for (const node of root.listNodes()) {
+          const parents = typeof node.listParents === 'function' ? node.listParents() : [];
+          if (parents.length === 0) {
+            applyScaleToNode(node, factor, seen);
+          }
+        }
+      }
+
+      // Last-resort fallback for documents without parent metadata.
+      if (seen.size === 0) {
+        for (const node of root.listNodes()) {
+          applyScaleToNode(node, factor, seen);
+          break;
+        }
+      }
+    }
+
+    function fitCameraToActiveModel() {
+      const model = getActiveModelObject();
+      if (!model) return false;
+
+      const box = new THREE.Box3().setFromObject(model);
+      if (box.isEmpty()) return false;
+
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3()).length();
+      if (!Number.isFinite(size) || size <= 0) return false;
+      const cameraManager = viewer?.belowViewer?.cameraManager;
+
+      if (cameraManager && typeof cameraManager.frameObject === 'function') {
+        cameraManager.frameObject(center, size);
+        updateCameraSnippet();
+        return true;
+      }
+      return false;
+    }
+
+    function applyScaleToActiveModelPreview(factor) {
+      const model = getActiveModelObject();
+      if (!model) return false;
+
+      model.scale.multiplyScalar(factor);
+      model.updateMatrixWorld(true);
+
+      if (isOrientationEditMode) {
+        orientationEditStartMatrix = model.matrixWorld.clone();
+      }
+
+      refreshOrientationFloor();
+      refreshOrientationGizmo();
+      if (!isOrientationEditMode) {
+        fitCameraToActiveModel();
+      }
+      return true;
+    }
+
+    async function commitPendingScaleToBuffers(readIO = null) {
+      if (!hasPendingScaleCommit || !originalArrayBuffer) return;
+
+      const committed = Number.isFinite(committedScaleFactor) && committedScaleFactor > 0
+        ? committedScaleFactor
+        : 1;
+      const deltaScaleFactor = currentScaleFactor / committed;
+      if (!Number.isFinite(deltaScaleFactor) || Math.abs(deltaScaleFactor - 1) < 1e-12) {
+        committedScaleFactor = currentScaleFactor;
+        hasPendingScaleCommit = false;
+        return;
+      }
+
+      const ioForWrite = readIO || await initReadOnlyIO();
+      originalArrayBuffer = await rewriteBufferWithScale(originalArrayBuffer, deltaScaleFactor, ioForWrite, 'source model');
+      if (optimizedArrayBuffer) {
+        optimizedArrayBuffer = await rewriteBufferWithScale(optimizedArrayBuffer, deltaScaleFactor, ioForWrite, 'optimised model');
+      }
+
+      committedScaleFactor = currentScaleFactor;
+      hasPendingScaleCommit = false;
+    }
+
+    async function rewriteBufferWithScale(sourceBuffer, factor, readIO, label = 'model') {
+      setProgress(`Reading ${label}...`);
+      const gltfDocument = await readIO.readBinary(new Uint8Array(sourceBuffer));
+      applyScaleToDocument(gltfDocument, factor);
+
+      const usesDraco = gltfDocument.getRoot().listExtensionsUsed()
+        .some((ext) => ext.extensionName === KHRDracoMeshCompression.EXTENSION_NAME);
+      if (usesDraco) {
+        await ensureDracoEncoderForWrite(readIO);
+      }
+
+      setProgress(`Writing ${label}...`);
+      const updatedGlb = await readIO.writeBinary(gltfDocument);
+      return updatedGlb.buffer;
+    }
+
+    async function applyScaleFactor() {
+      const hasBaseModel = !!originalArrayBuffer;
+      if (!hasBaseModel || isOptimizing) return;
+
+      const measurementDistance = getActiveMeasurementDistance();
+      const hasMeasurement = Number.isFinite(measurementDistance) && measurementDistance > 0;
+      const enteredScaleFactor = Number.parseFloat(scaleFactorInput?.value ?? '');
+      const enteredMeasuredLength = Number.parseFloat(measuredLengthInput?.value ?? '');
+
+      let desiredScaleFactor = Number.NaN;
+      if (lastScaleControlSource === 'measured' && hasMeasurement && Number.isFinite(enteredMeasuredLength) && enteredMeasuredLength > 0) {
+        desiredScaleFactor = currentScaleFactor * (enteredMeasuredLength / measurementDistance);
+        setScaleFactorInputValue(desiredScaleFactor, true);
+      } else if (Number.isFinite(enteredScaleFactor) && enteredScaleFactor > 0) {
+        desiredScaleFactor = enteredScaleFactor;
+      } else if (hasMeasurement && Number.isFinite(enteredMeasuredLength) && enteredMeasuredLength > 0) {
+        desiredScaleFactor = currentScaleFactor * (enteredMeasuredLength / measurementDistance);
+        setScaleFactorInputValue(desiredScaleFactor, true);
+      }
+
+      if (!Number.isFinite(desiredScaleFactor) || desiredScaleFactor <= 0) {
+        if (!hasMeasurement && Number.isFinite(enteredMeasuredLength) && enteredMeasuredLength > 0) {
+          alert('Need an active 2-point measurement to apply measured length.');
+        } else {
+          alert('Scale factor must be a positive number.');
+        }
+        return;
+      }
+
+      const previousScaleFactor = Number.isFinite(currentScaleFactor) && currentScaleFactor > 0
+        ? currentScaleFactor
+        : 1;
+      const deltaScaleFactor = desiredScaleFactor / previousScaleFactor;
+      if (Math.abs(deltaScaleFactor - 1) < 1e-12) {
+        showStatusMessage(`Scale already set to x${desiredScaleFactor.toFixed(4)}.`);
+        return;
+      }
+
+      try {
+        const measurementSnapshot = captureMeasurementSnapshot();
+        const previewScaled = applyScaleToActiveModelPreview(deltaScaleFactor);
+        if (!previewScaled) {
+          throw new Error('No active model available to preview scale.');
+        }
+
+        currentScaleFactor = desiredScaleFactor;
+        hasPendingScaleCommit = true;
+        hasScaleAdjustments = Math.abs(currentScaleFactor - 1) >= 1e-12;
+
+        restoreMeasurementSnapshot(measurementSnapshot, deltaScaleFactor);
+
+        showStatusMessage(`Scale set to x${currentScaleFactor.toFixed(4)} (preview updated, writes on optimise/download).`, false);
+        updateModelStatus();
+      } catch (err) {
+        console.error('Failed to apply scale:', err);
+        alert('Failed to apply scale: ' + err.message);
+      }
+    }
+
+    async function reloadCurrentView(options = {}) {
+      if (isOptimizing) return false;
+      if (options.onlyIfPending && !pendingPreviewReload && hasModel) return false;
       const buffer = (isShowingOptimized && optimizedArrayBuffer) ? optimizedArrayBuffer : originalArrayBuffer;
-      if (!buffer) return;
-      await loadModelFromArrayBuffer(buffer, false);
-      updateModelStatus();
+      if (!buffer) return false;
+
+      if (previewReloadInFlight) {
+        return previewReloadInFlight;
+      }
+
+      const retries = Number.isFinite(options.retries)
+        ? Math.max(1, Math.floor(options.retries))
+        : 1;
+      const retryDelayMs = Number.isFinite(options.retryDelayMs)
+        ? Math.max(0, Math.floor(options.retryDelayMs))
+        : PREVIEW_RELOAD_RETRY_DELAY_MS;
+
+      previewReloadInFlight = (async () => {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+          const loaded = await loadModelFromArrayBuffer(buffer, false);
+          if (loaded) {
+            pendingPreviewReload = false;
+            if (hasPendingScaleCommit) {
+              const committed = Number.isFinite(committedScaleFactor) && committedScaleFactor > 0
+                ? committedScaleFactor
+                : 1;
+              const pendingPreviewScale = currentScaleFactor / committed;
+              if (Number.isFinite(pendingPreviewScale) && Math.abs(pendingPreviewScale - 1) >= 1e-12) {
+                applyScaleToActiveModelPreview(pendingPreviewScale);
+              }
+            }
+            updateModelStatus();
+            return true;
+          }
+
+          pendingPreviewReload = true;
+          if (attempt < retries) {
+            await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+            await yieldToBrowser();
+          }
+        }
+
+        updateModelStatus();
+        return false;
+      })();
+
+      try {
+        return await previewReloadInFlight;
+      } finally {
+        previewReloadInFlight = null;
+      }
     }
 
     function attachCanvasHandlers() {
@@ -969,16 +2945,51 @@
         if (!image) continue;
         const mimeType = texture.getMimeType() || 'image/png';
         try {
-          const blob = new Blob([image], { type: mimeType });
-          const bitmap = await createImageBitmap(blob);
-          const dim = Math.max(bitmap.width, bitmap.height);
-          if (typeof bitmap.close === 'function') bitmap.close();
+          const { width, height } = await getImageDimensions(image, mimeType);
+          const dim = Math.max(width, height);
           maxDim = maxDim == null ? dim : Math.max(maxDim, dim);
         } catch (err) {
           console.warn('Texture decode failed for size check:', err);
         }
       }
       return maxDim;
+    }
+
+    async function getImageDimensions(imageData, mimeType) {
+      const blob = new Blob([imageData], { type: mimeType || 'image/png' });
+
+      if (typeof createImageBitmap === 'function') {
+        const bitmap = await createImageBitmap(blob);
+        try {
+          return { width: bitmap.width, height: bitmap.height };
+        } finally {
+          if (typeof bitmap.close === 'function') bitmap.close();
+        }
+      }
+
+      if (
+        typeof Image === 'undefined' ||
+        typeof URL === 'undefined' ||
+        typeof URL.createObjectURL !== 'function'
+      ) {
+        throw new Error('No browser image decode path is available.');
+      }
+
+      const objectUrl = URL.createObjectURL(blob);
+      try {
+        const imageEl = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('Failed to decode image dimensions.'));
+          img.src = objectUrl;
+        });
+        return {
+          width: imageEl.naturalWidth || imageEl.width,
+          height: imageEl.naturalHeight || imageEl.height
+        };
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
     }
 
     function withTimeout(promise, ms, label) {
@@ -999,25 +3010,373 @@
       });
     }
 
-    function startProgressTicker(getLabel, intervalMs = 1000) {
-      let timerId = null;
-      let stopped = false;
-      const startedAt = performance.now();
+    const KTX2_SUPPORTED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    const MAX_BROWSER_KTX2_ENCODE_DIMENSION = 4096;
+    const MAX_BROWSER_TEXTURE_DIMENSION = MAX_BROWSER_KTX2_ENCODE_DIMENSION;
+    const MAX_BASIS_SOURCE_IMAGE_PIXELS = MAX_BROWSER_KTX2_ENCODE_DIMENSION * MAX_BROWSER_KTX2_ENCODE_DIMENSION;
+    const BASIS_ENCODER_JS_URL = new URL('./browser/basis_encoder.js?v=20260207c', window.location.href).href;
+    const BASIS_ENCODER_WASM_URL = new URL('./browser/basis_encoder.wasm?v=20260207c', window.location.href).href;
 
-      const tick = () => {
-        if (stopped) return;
-        const elapsedSec = Math.max(0, Math.floor((performance.now() - startedAt) / 1000));
-        setProgress(getLabel(elapsedSec));
-        timerId = setTimeout(tick, intervalMs);
+    function setTextureResizeState(state = {}) {
+      textureResizeState = {
+        checked: !!state.checked,
+        maxDimension: Number.isFinite(state.maxDimension) ? Math.round(state.maxDimension) : null,
+        maxPixels: Number.isFinite(state.maxPixels) ? Math.round(state.maxPixels) : null,
+        needsDownscale: !!state.needsDownscale,
+        needsWasmTexelDownscale: !!state.needsWasmTexelDownscale,
+        needsBlockAlign: !!state.needsBlockAlign
       };
+    }
 
-      tick();
+    function getTextureResizeHint(includeNoDownscaleHint = false) {
+      if (!textureResizeState.checked) return '';
+      if (textureResizeState.needsWasmTexelDownscale) {
+        return `Some textures exceed browser KTX2 WASM limits and will be downscaled to ${MAX_BROWSER_KTX2_ENCODE_DIMENSION}px for browser optimisation.`;
+      }
+      if (textureResizeState.needsBlockAlign) {
+        return 'Some textures are not 4x4-aligned and will stay as original images (no padding/downscale) in browser optimise.';
+      }
+      if (textureResizeState.needsDownscale && textureResizeState.maxDimension) {
+        return `Largest texture is ${textureResizeState.maxDimension}px; next optimise will downscale to ${MAX_BROWSER_TEXTURE_DIMENSION}px.`;
+      }
+      if (includeNoDownscaleHint && textureResizeState.maxDimension) {
+        return `No downscale needed (max texture ${textureResizeState.maxDimension}px).`;
+      }
+      return '';
+    }
 
-      return () => {
-        stopped = true;
-        if (timerId != null) {
-          clearTimeout(timerId);
+    async function inspectTextureResizeNeed(textures) {
+      const compressible = textures.filter((texture) => {
+        const mimeType = texture.getMimeType();
+        return mimeType && KTX2_SUPPORTED_MIME_TYPES.has(mimeType);
+      });
+
+      if (compressible.length === 0) {
+        return {
+          checked: true,
+          maxDimension: null,
+          maxPixels: null,
+          needsDownscale: false,
+          needsWasmTexelDownscale: false,
+          needsBlockAlign: false
+        };
+      }
+
+      try {
+        let maxDimension = null;
+        let maxPixels = null;
+        let needsBlockAlign = false;
+        for (const texture of compressible) {
+          const image = texture.getImage();
+          if (!image) continue;
+          const mimeType = texture.getMimeType() || 'image/png';
+          const { width, height } = await getImageDimensions(image, mimeType);
+          const dim = Math.max(width, height);
+          const pixels = width * height;
+          if ((width % 4) !== 0 || (height % 4) !== 0) {
+            needsBlockAlign = true;
+          }
+          maxDimension = maxDimension == null ? dim : Math.max(maxDimension, dim);
+          maxPixels = maxPixels == null ? pixels : Math.max(maxPixels, pixels);
         }
+        return {
+          checked: true,
+          maxDimension: maxDimension ?? null,
+          maxPixels: maxPixels ?? null,
+          needsDownscale: !!maxDimension && maxDimension > MAX_BROWSER_TEXTURE_DIMENSION,
+          needsWasmTexelDownscale: !!maxPixels && maxPixels > MAX_BASIS_SOURCE_IMAGE_PIXELS,
+          needsBlockAlign
+        };
+      } catch (err) {
+        console.warn('Texture size inspection failed:', err);
+        return {
+          checked: false,
+          maxDimension: null,
+          maxPixels: null,
+          needsDownscale: false,
+          needsWasmTexelDownscale: false,
+          needsBlockAlign: false
+        };
+      }
+    }
+
+    function clampToBlockAlignedDimension(value) {
+      const rounded = Math.max(1, Math.round(value));
+      if (rounded >= 4) {
+        return Math.max(4, rounded - (rounded % 4));
+      }
+      return 4;
+    }
+
+    async function resizeImageForKtx2Encode(imageData, mimeType, targetWidth, targetHeight) {
+      const type = mimeType || 'image/png';
+      const blob = new Blob([imageData], { type });
+      let bitmap = null;
+      let objectUrl = null;
+      let imageEl = null;
+
+      try {
+        if (typeof createImageBitmap === 'function') {
+          bitmap = await createImageBitmap(blob);
+        } else {
+          if (
+            typeof Image === 'undefined' ||
+            typeof URL === 'undefined' ||
+            typeof URL.createObjectURL !== 'function'
+          ) {
+            throw new Error('No browser image decode path is available for resize.');
+          }
+          objectUrl = URL.createObjectURL(blob);
+          imageEl = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Failed to decode image for resize.'));
+            img.src = objectUrl;
+          });
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('Canvas 2D context not available for resize.');
+        }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(bitmap || imageEl, 0, 0, targetWidth, targetHeight);
+
+        const outputMimeType = KTX2_SUPPORTED_MIME_TYPES.has(type) ? type : 'image/png';
+        const outputBlob = await new Promise((resolve, reject) => {
+          canvas.toBlob(
+            (result) => (result ? resolve(result) : reject(new Error('Failed to encode resized texture.'))),
+            outputMimeType,
+            outputMimeType === 'image/jpeg' ? 0.92 : undefined
+          );
+        });
+
+        return {
+          imageData: await outputBlob.arrayBuffer(),
+          mimeType: outputBlob.type || outputMimeType
+        };
+      } finally {
+        if (bitmap && typeof bitmap.close === 'function') {
+          bitmap.close();
+        }
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+      }
+    }
+
+    async function prepareTextureForWasmEncoding(imageData, mimeType, label) {
+      const { width: sourceWidth, height: sourceHeight } = await getImageDimensions(imageData, mimeType);
+      const pixels = sourceWidth * sourceHeight;
+      const needsDimensionDownscale =
+        sourceWidth > MAX_BROWSER_KTX2_ENCODE_DIMENSION || sourceHeight > MAX_BROWSER_KTX2_ENCODE_DIMENSION;
+      const needsWasmDownscale = pixels > MAX_BASIS_SOURCE_IMAGE_PIXELS;
+      const needsBlockAlign = (sourceWidth % 4) !== 0 || (sourceHeight % 4) !== 0;
+
+      if (!needsDimensionDownscale && !needsWasmDownscale && !needsBlockAlign) {
+        return {
+          encodedInput: imageData,
+          downscaledForWasm: false,
+          blockAlignedForKtx2: false,
+          skippedForWasmCap: false,
+          skippedForBlockAlignment: false,
+          skipReason: '',
+          sourceWidth,
+          sourceHeight,
+          targetWidth: sourceWidth,
+          targetHeight: sourceHeight
+        };
+      }
+
+      if (needsDimensionDownscale || needsWasmDownscale) {
+        let scale = 1;
+        if (sourceWidth > MAX_BROWSER_KTX2_ENCODE_DIMENSION || sourceHeight > MAX_BROWSER_KTX2_ENCODE_DIMENSION) {
+          const dimScale = Math.min(
+            MAX_BROWSER_KTX2_ENCODE_DIMENSION / sourceWidth,
+            MAX_BROWSER_KTX2_ENCODE_DIMENSION / sourceHeight
+          );
+          scale = Math.min(scale, dimScale);
+        }
+        if (pixels > MAX_BASIS_SOURCE_IMAGE_PIXELS) {
+          const pixelScale = Math.sqrt(MAX_BASIS_SOURCE_IMAGE_PIXELS / pixels);
+          scale = Math.min(scale, pixelScale);
+        }
+        scale = Math.min(scale, 1);
+
+        let targetWidth = Math.max(1, Math.floor(sourceWidth * scale));
+        let targetHeight = Math.max(1, Math.floor(sourceHeight * scale));
+
+        targetWidth = clampToBlockAlignedDimension(targetWidth);
+        targetHeight = clampToBlockAlignedDimension(targetHeight);
+
+        const resized = await resizeImageForKtx2Encode(imageData, mimeType, targetWidth, targetHeight);
+
+        return {
+          encodedInput: resized.imageData,
+          downscaledForWasm: targetWidth !== sourceWidth || targetHeight !== sourceHeight,
+          blockAlignedForKtx2: (targetWidth % 4) === 0 && (targetHeight % 4) === 0,
+          skippedForWasmCap: false,
+          skippedForBlockAlignment: false,
+          skipReason: '',
+          sourceWidth,
+          sourceHeight,
+          targetWidth,
+          targetHeight
+        };
+      }
+
+      return {
+        encodedInput: null,
+        downscaledForWasm: false,
+        blockAlignedForKtx2: false,
+        skippedForWasmCap: false,
+        skippedForBlockAlignment: true,
+        skipReason: `not 4x4-aligned (${sourceWidth}x${sourceHeight})`,
+        sourceWidth,
+        sourceHeight,
+        targetWidth: sourceWidth,
+        targetHeight: sourceHeight
+      };
+    }
+
+    function getTextureLabel(texture, fallbackIndex) {
+      return texture.getName() || texture.getURI() || `texture_${fallbackIndex + 1}`;
+    }
+
+    function yieldToBrowser() {
+      return new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    async function convertTexturesToKtx2Sequential(gltfDocument, options, onTextureDone, candidatesOverride = null) {
+      const root = gltfDocument.getRoot();
+      const baseList = Array.isArray(candidatesOverride) ? candidatesOverride : root.listTextures();
+      const candidates = baseList.filter((texture) => {
+        const mimeType = texture.getMimeType();
+        return mimeType && KTX2_SUPPORTED_MIME_TYPES.has(mimeType);
+      });
+      let skippedForWasmCapCount = 0;
+      let skippedForBlockAlignmentCount = 0;
+      let skippedForRuntimeOomCount = 0;
+
+      for (let i = 0; i < candidates.length; i++) {
+        const texture = candidates[i];
+        const label = getTextureLabel(texture, i);
+        if (onTextureDone) {
+          onTextureDone({
+            phase: 'start',
+            current: i + 1,
+            completed: i,
+            total: candidates.length,
+            label,
+            converted: false,
+            skipReason: '',
+            downscaledForWasm: false
+          });
+        }
+        await yieldToBrowser();
+
+        const image = texture.getImage();
+        if (!image) {
+          throw new Error(`KTX2 conversion failed for "${label}" (missing image data).`);
+        }
+        const sourceMimeType = texture.getMimeType() || 'image/png';
+        const prepared = await prepareTextureForWasmEncoding(image, sourceMimeType, label);
+        if (prepared.skippedForWasmCap) {
+          skippedForWasmCapCount++;
+          console.warn(`[ktx2] Skipping "${label}": ${prepared.skipReason}.`);
+          if (onTextureDone) {
+            onTextureDone({
+              phase: 'done',
+              current: i + 1,
+              completed: i + 1,
+              total: candidates.length,
+              label,
+              converted: false,
+              skipReason: prepared.skipReason,
+              downscaledForWasm: prepared.downscaledForWasm
+            });
+          }
+          await yieldToBrowser();
+          continue;
+        }
+        if (prepared.skippedForBlockAlignment) {
+          skippedForBlockAlignmentCount++;
+          console.warn(`[ktx2] Skipping "${label}": ${prepared.skipReason}.`);
+          if (onTextureDone) {
+            onTextureDone({
+              phase: 'done',
+              current: i + 1,
+              completed: i + 1,
+              total: candidates.length,
+              label,
+              converted: false,
+              skipReason: prepared.skipReason,
+              downscaledForWasm: prepared.downscaledForWasm
+            });
+          }
+          await yieldToBrowser();
+          continue;
+        }
+
+        let ktx2Data;
+        try {
+          ktx2Data = await encodeToKTX2(prepared.encodedInput, options);
+        } catch (err) {
+          const errMessage = err instanceof Error ? err.message : String(err);
+          const isRuntimeWasmOom = /aborted|allocation failed|out of memory|cannot enlarge memory|encode failed/i.test(errMessage);
+          if (!isRuntimeWasmOom) {
+            throw new Error(`KTX2 conversion failed for "${label}": ${errMessage}`);
+          }
+
+          skippedForRuntimeOomCount++;
+          const skipReason = `encoder ran out of browser WASM memory (${sourceMimeType}, ${prepared.sourceWidth}x${prepared.sourceHeight})`;
+          console.warn(`[ktx2] Skipping "${label}": ${skipReason}.`);
+          if (onTextureDone) {
+            onTextureDone({
+              phase: 'done',
+              current: i + 1,
+              completed: i + 1,
+              total: candidates.length,
+              label,
+              converted: false,
+              skipReason,
+              downscaledForWasm: prepared.downscaledForWasm
+            });
+          }
+          await yieldToBrowser();
+          continue;
+        }
+
+        texture.setImage(ktx2Data);
+        texture.setMimeType('image/ktx2');
+        if (onTextureDone) {
+          onTextureDone({
+            phase: 'done',
+            current: i + 1,
+            completed: i + 1,
+            total: candidates.length,
+            label,
+            converted: true,
+            skipReason: '',
+            downscaledForWasm: prepared.downscaledForWasm
+          });
+        }
+        await yieldToBrowser();
+      }
+
+      if (root.listTextures().some((texture) => texture.getMimeType() === 'image/ktx2')) {
+        gltfDocument.createExtension(KHRTextureBasisu).setRequired(true);
+      }
+
+      return {
+        convertedCount: candidates.length,
+        skippedForWasmCapCount,
+        skippedForBlockAlignmentCount,
+        skippedForRuntimeOomCount
       };
     }
 
@@ -1129,7 +3488,7 @@
 
     // The optimization pipeline matching the shell script
     async function optimizeModel(arrayBuffer) {
-      await new Promise(requestAnimationFrame);
+      await yieldToBrowser();
       await initGltfTransform();
 
       setProgress('Reading model...');
@@ -1185,51 +3544,48 @@
 
       const texturesList = root.listTextures();
       const hasTextures = texturesList.length > 0;
+      let ktx2Candidates = [];
+      const optimizationSummary = {
+        resizedTextures: false,
+        resizeCheck: {
+          checked: false,
+          maxDimension: null,
+          maxPixels: null,
+          needsDownscale: false,
+          needsWasmTexelDownscale: false,
+          needsBlockAlign: false
+        },
+        ktx2CandidateCount: 0,
+        wasmSkippedTextures: 0,
+        blockAlignSkippedTextures: 0,
+        runtimeOomSkippedTextures: 0
+      };
 
       if (hasTextures) {
-        const supportedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
-        const ktx2Candidates = texturesList.filter((t) => {
+        ktx2Candidates = texturesList.filter((t) => {
           const type = t.getMimeType();
-          return type && supportedMimeTypes.has(type);
+          return type && KTX2_SUPPORTED_MIME_TYPES.has(type);
         });
-        let maxTextureDimension = null;
-        if (typeof createImageBitmap === 'function') {
-          try {
-            maxTextureDimension = await getMaxTextureDimension(texturesList);
-          } catch (err) {
-            console.warn('Texture size check failed, skipping resize:', err);
-          }
+        optimizationSummary.ktx2CandidateCount = ktx2Candidates.length;
+
+        setProgress('Checking texture dimensions...');
+        const resizeCheck = await inspectTextureResizeNeed(texturesList);
+        optimizationSummary.resizeCheck = resizeCheck;
+
+        if (resizeCheck.checked && resizeCheck.maxDimension && !resizeCheck.needsDownscale) {
+          setProgress(`No texture downscale needed (max ${resizeCheck.maxDimension}px).`);
+          await yieldToBrowser();
         }
 
-        if (maxTextureDimension && maxTextureDimension > 8192) {
+        if (resizeCheck.needsDownscale) {
           transforms.push({
-            label: 'Resizing textures to 8192x8192...',
+            label: `Resizing textures to ${MAX_BROWSER_TEXTURE_DIMENSION}x${MAX_BROWSER_TEXTURE_DIMENSION}...`,
             transform: textureCompress({
-              resize: [8192, 8192]
+              resize: [MAX_BROWSER_TEXTURE_DIMENSION, MAX_BROWSER_TEXTURE_DIMENSION]
             })
           });
+          optimizationSummary.resizedTextures = true;
         }
-
-        // Step 6: KTX2/ETC1S texture compression with quality 64 (shell script line 318)
-        transforms.push({
-          label: 'Converting textures to KTX2/ETC1S...',
-          transform: ktx2({
-            isUASTC: false, // ETC1S mode
-            enableDebug: true, // Enable debug to see what's happening
-            generateMipmap: true,
-            quality: 64, // Match shell script quality
-            encoderPath: 'https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/?v=20260127',
-            wasmUrl: 'https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.wasm?v=20260127',
-            jsUrl: 'https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.js?v=20260127'
-          }),
-          ticker: (elapsedSec) => `Converting textures to KTX2/ETC1S... (${ktx2Candidates.length} texture${ktx2Candidates.length === 1 ? '' : 's'}, ${elapsedSec}s elapsed)`,
-          postCheck: () => {
-            const failed = ktx2Candidates.filter((t) => t.getMimeType() !== 'image/ktx2');
-            if (failed.length > 0) {
-              throw new Error(`KTX2 conversion failed for ${failed.length} texture(s).`);
-            }
-          }
-        });
       }
 
       // Step 7: Draco compression with 20-bit quantization (shell script lines 322-330)
@@ -1247,61 +3603,120 @@
         })
       });
 
-      // Apply transforms sequentially to show accurate progress
+      const totalWorkUnits = transforms.length + ktx2Candidates.length + 1; // +1 for writeBinary
+      let completedUnits = 0;
+      setOptimizeProgress(0);
+
+      // Apply non-KTX2 transforms first.
       for (let stepIndex = 0; stepIndex < transforms.length; stepIndex++) {
         const step = transforms[stepIndex];
-        const stepPrefix = `Step ${stepIndex + 1}/${transforms.length}`;
-        const stepLabel = `${stepPrefix}: ${step.label}`;
-        setProgress(stepLabel);
-        await new Promise(requestAnimationFrame);
-        let stopTicker = null;
-        try {
-          if (step.ticker) {
-            stopTicker = startProgressTicker((elapsedSec) => `${stepPrefix}: ${step.ticker(elapsedSec)}`);
-          }
-          if (step.timeoutMs) {
-            await withTimeout(gltfDocument.transform(step.transform), step.timeoutMs, step.label);
-          } else {
-            await gltfDocument.transform(step.transform);
-          }
-        } finally {
-          if (stopTicker) {
-            stopTicker();
-          }
-        }
-        if (step.postCheck) {
-          step.postCheck();
-        }
-        // Yield between heavy steps so the tab can process input/repaint.
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        setProgress(formatStepLabel(completedUnits + 1, totalWorkUnits, step.label));
+        await gltfDocument.transform(step.transform);
+        completedUnits++;
+        setOptimizeProgress(completedUnits / totalWorkUnits);
+        await yieldToBrowser();
       }
 
-      // Write to GLB
-      setProgress('Writing GLB...');
+      // KTX2 conversion is done one texture at a time for better memory behavior and real progress.
+      if (ktx2Candidates.length > 0) {
+        const { convertedCount, skippedForWasmCapCount, skippedForBlockAlignmentCount, skippedForRuntimeOomCount } = await convertTexturesToKtx2Sequential(
+          gltfDocument,
+          {
+            isUASTC: false, // ETC1S mode
+            enableDebug: false,
+            generateMipmap: true,
+            qualityLevel: 64, // ETC1S quality level
+            wasmUrl: BASIS_ENCODER_WASM_URL,
+            jsUrl: BASIS_ENCODER_JS_URL
+          },
+          ({ phase, current, completed, total, label, converted, skipReason }) => {
+            if (phase === 'start') {
+              const textureStepText = `Encoding texture ${current}/${total}: ${label}`;
+              setProgress(formatStepLabel(completedUnits + completed + 1, totalWorkUnits, textureStepText));
+              return;
+            }
+            const action = converted ? 'KTX2' : 'Skipped';
+            const suffix = converted ? label : `${label} (${skipReason})`;
+            const textureStepText = `${action} texture ${completed}/${total}: ${suffix}`;
+            setProgress(formatStepLabel(completedUnits + completed, totalWorkUnits, textureStepText));
+            setOptimizeProgress((completedUnits + completed) / totalWorkUnits);
+          },
+          ktx2Candidates
+        );
+        optimizationSummary.wasmSkippedTextures = skippedForWasmCapCount;
+        optimizationSummary.blockAlignSkippedTextures = skippedForBlockAlignmentCount;
+        optimizationSummary.runtimeOomSkippedTextures = skippedForRuntimeOomCount;
+        completedUnits += convertedCount;
+        setOptimizeProgress(completedUnits / totalWorkUnits);
+      }
+
+      // Write final GLB
+      setProgress(formatStepLabel(completedUnits + 1, totalWorkUnits, 'Writing GLB...'));
       const optimizedGlb = await io.writeBinary(gltfDocument);
+      completedUnits++;
+      setOptimizeProgress(completedUnits / totalWorkUnits);
 
       setProgress(null);
-      return optimizedGlb.buffer;
+      return {
+        buffer: optimizedGlb.buffer,
+        summary: optimizationSummary
+      };
     }
 
     async function runOptimization() {
       if (!originalArrayBuffer || isOptimizing) return;
+      if (isOrientationEditMode) {
+        const orientationApplied = await applyOrientationEdits();
+        if (!orientationApplied) return;
+      }
 
       isOptimizing = true;
       optimiseBtn.disabled = true;
       optimiseBtn.textContent = 'Optimising...';
+      resetOptimizeProgress();
       showOptimizeOverlay(true);
+      setOptimizeOverlayMode('progress');
+      setOptimizeStatus('Optimising model');
       setOptimizeWarningVisible(true);
       setProgress('Preparing optimisation...');
-      await new Promise(requestAnimationFrame);
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await maybeAcquireWakeLock();
+      setBeforeUnloadGuard(true);
+      await yieldToBrowser();
 
       try {
-        optimizedArrayBuffer = await optimizeModel(originalArrayBuffer);
+        await commitPendingScaleToBuffers();
+        const result = await optimizeModel(originalArrayBuffer);
+        optimizedArrayBuffer = result.buffer;
+        lastOptimizationSummary = result.summary || null;
+        hasNewTextures = false;
+        requiresReoptimisation = false;
+        if (lastOptimizationSummary?.resizeCheck?.checked) {
+          setTextureResizeState({
+            checked: true,
+            maxDimension: lastOptimizationSummary.resizeCheck.maxDimension,
+            maxPixels: lastOptimizationSummary.resizeCheck.maxPixels,
+            needsDownscale: false,
+            needsWasmTexelDownscale: false,
+            needsBlockAlign: false
+          });
+        } else {
+          setTextureResizeState();
+        }
 
         // Show the optimized model
-        await loadModelFromArrayBuffer(optimizedArrayBuffer, true);
+        let previewLoaded = await loadModelFromArrayBuffer(optimizedArrayBuffer, true);
+        if (!previewLoaded) {
+          previewLoaded = await reloadCurrentView({
+            retries: PREVIEW_RELOAD_RETRY_COUNT,
+            retryDelayMs: PREVIEW_RELOAD_RETRY_DELAY_MS,
+            onlyIfPending: true
+          });
+          if (!previewLoaded) {
+            showStatusMessage('Optimised model is ready. Preview reload is pending and will retry when this tab is active.', false);
+          }
+        }
         isShowingOptimized = true;
+        hasScaleAdjustments = Math.abs(currentScaleFactor - 1) >= 1e-12;
 
         // Update UI
         optimiseBtn.style.display = 'none';
@@ -1312,15 +3727,19 @@
       } catch (err) {
         console.error('Optimisation failed:', err);
         alert('Optimisation failed: ' + err.message);
-        optimiseBtn.textContent = 'Optimise';
+        optimiseBtn.textContent = requiresReoptimisation ? 'Re-optimise' : 'Optimise';
         optimiseBtn.disabled = false;
         showStatusMessage(`Optimisation failed: ${err.message}`, true);
       } finally {
         isOptimizing = false;
+        setBeforeUnloadGuard(false);
+        await releaseWakeLock();
         showOptimizeOverlay(false);
         setOptimizeWarningVisible(false);
+        setProgress(null);
+        updateModelStatus();
         if (!optimizedArrayBuffer) {
-          optimiseBtn.textContent = 'Optimise';
+          optimiseBtn.textContent = requiresReoptimisation ? 'Re-optimise' : 'Optimise';
           optimiseBtn.disabled = false;
         }
       }
@@ -1328,17 +3747,55 @@
 
     async function toggleView() {
       if (!originalArrayBuffer || !optimizedArrayBuffer) return;
+      if (isOrientationEditMode) {
+        const orientationApplied = await applyOrientationEdits();
+        if (!orientationApplied) return;
+      }
+      if (hasPendingScaleCommit) {
+        showOptimizeOverlay(true);
+        setOptimizeOverlayMode('spinner');
+        setOptimizeWarningVisible(false);
+        setOptimizeStatus('Applying pending scale');
+        try {
+          await commitPendingScaleToBuffers();
+        } finally {
+          showOptimizeOverlay(false);
+        }
+      }
 
-      isShowingOptimized = !isShowingOptimized;
-      const buffer = isShowingOptimized ? optimizedArrayBuffer : originalArrayBuffer;
-      await loadModelFromArrayBuffer(buffer, false);
+      const nextShowOptimized = !isShowingOptimized;
+      const buffer = nextShowOptimized ? optimizedArrayBuffer : originalArrayBuffer;
+      const previewLoaded = await loadModelFromArrayBuffer(buffer, false);
+      if (previewLoaded) {
+        isShowingOptimized = nextShowOptimized;
+      }
       updateViewToggle();
     }
 
-    function downloadOptimized() {
+    async function downloadOptimized() {
       const hasOptimized = !!optimizedArrayBuffer;
-      const hasUpdated = !!originalArrayBuffer && hasNewTextures;
+      const hasUpdated = !!originalArrayBuffer && (hasNewTextures || hasScaleAdjustments || hasOrientationAdjustments || hasPendingScaleCommit);
       if (!hasOptimized && !hasUpdated) return;
+      if (isOrientationEditMode) {
+        const orientationApplied = await applyOrientationEdits();
+        if (!orientationApplied) return;
+      }
+
+      if (hasPendingScaleCommit) {
+        showOptimizeOverlay(true);
+        setOptimizeOverlayMode('spinner');
+        setOptimizeWarningVisible(false);
+        setOptimizeStatus('Applying pending scale');
+        try {
+          await commitPendingScaleToBuffers();
+        } catch (err) {
+          console.error('Failed to commit pending scale before download:', err);
+          alert('Failed to prepare download: ' + err.message);
+          return;
+        } finally {
+          showOptimizeOverlay(false);
+        }
+      }
 
       const buffer = hasOptimized ? optimizedArrayBuffer : originalArrayBuffer;
       const blob = new Blob([buffer], { type: 'model/gltf-binary' });
@@ -1353,8 +3810,47 @@
 
     // Event listeners for buttons
     optimiseBtn.addEventListener('click', runOptimization);
-    downloadBtn.addEventListener('click', downloadOptimized);
+    downloadBtn.addEventListener('click', () => {
+      downloadOptimized();
+    });
     viewToggle.addEventListener('click', toggleView);
+    applyScaleBtn.addEventListener('click', applyScaleFactor);
+    orientationToggleBtn.addEventListener('click', async () => {
+      if (isOrientationEditMode) {
+        await applyOrientationEdits();
+        return;
+      }
+      setOrientationEditMode(true);
+    });
+    viewFrontBtn.addEventListener('click', () => setOrientationView('front'));
+    viewRightBtn.addEventListener('click', () => setOrientationView('right'));
+    viewTopBtn.addEventListener('click', () => setOrientationView('top'));
+    scaleFactorInput.addEventListener('input', () => {
+      lastScaleControlSource = 'scale';
+      syncScaleMeasurementControls('scale');
+    });
+    measuredLengthInput.addEventListener('input', () => {
+      lastScaleControlSource = 'measured';
+      syncScaleMeasurementControls('measured');
+    });
+    scaleFactorInput.addEventListener('focus', () => {
+      lastScaleControlSource = 'scale';
+    });
+    measuredLengthInput.addEventListener('focus', () => {
+      lastScaleControlSource = 'measured';
+    });
+    scaleFactorInput.addEventListener('keydown', async (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        await applyScaleFactor();
+      }
+    });
+    measuredLengthInput.addEventListener('keydown', async (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        await applyScaleFactor();
+      }
+    });
 
     // Helper to load model from ArrayBuffer
     async function loadModelFromArrayBuffer(arrayBuffer, updateDiskSize = true) {
@@ -1371,6 +3867,9 @@
         }
         await viewer.belowViewer.loadModel(url, { autoFrame: !hasModel });
         hasModel = true;
+        pendingPreviewReload = false;
+        previewLoadWarning = '';
+        previewLoadWarningIsError = false;
 
         attachCanvasHandlers();
 
@@ -1380,7 +3879,21 @@
         const modelRoot = viewer.belowViewer.loadedModels?.[0]?.model || viewer.belowViewer.sceneManager.scene;
         const stats = collectModelStats(modelRoot);
         updateStatsDisplay(stats);
+        refreshOrientationFloor();
+        refreshOrientationGizmo();
         updateModelStatus();
+        return true;
+      } catch (err) {
+        hasModel = false;
+        pendingPreviewReload = true;
+        setOrientationEditMode(false);
+        refreshOrientationGizmo();
+        clearStatsDisplay();
+        previewLoadWarning = 'Preview textures could not load in browser (often too heavy before optimisation). Optimise will retry loading textures; optimisation and download still work.';
+        previewLoadWarningIsError = false;
+        updateModelStatus();
+        console.warn('Preview load failed:', err);
+        return false;
       } finally {
         URL.revokeObjectURL(url);
       }
@@ -1388,15 +3901,47 @@
 
     // Reset optimization state when loading new model
     function resetOptimizationState() {
+      setOrientationEditMode(false);
       originalArrayBuffer = null;
       optimizedArrayBuffer = null;
       isShowingOptimized = false;
       hasNewTextures = false;
+      hasScaleAdjustments = false;
+      hasOrientationAdjustments = false;
+      currentScaleFactor = 1;
+      committedScaleFactor = 1;
+      hasPendingScaleCommit = false;
+      pendingPreviewReload = false;
+      previewReloadInFlight = null;
+      if (scaleFactorInput) {
+        scaleFactorInput.value = '1.0';
+      }
+      if (measuredLengthInput) {
+        measuredLengthInput.value = '';
+      }
+      requiresReoptimisation = false;
+      previewLoadWarning = '';
+      previewLoadWarningIsError = false;
+      setTextureResizeState();
+      lastOptimizationSummary = null;
+      clearStatsDisplay();
 
       optimiseBtn.textContent = 'Optimise';
       optimiseBtn.disabled = false;
       optimiseBtn.style.display = 'block';
       downloadBtn.style.display = 'none';
+      if (optimiseSection) {
+        optimiseSection.style.display = 'none';
+        optimiseSection.open = true;
+      }
+      if (actionButtons) actionButtons.style.display = 'none';
+      if (textureButtons) textureButtons.style.display = 'none';
+      if (transformTools) {
+        transformTools.style.display = 'none';
+      }
+      if (scaleControls) scaleControls.style.display = 'none';
+      if (orientationControls) orientationControls.style.display = 'none';
+      if (orientationViewButtons) orientationViewButtons.style.display = 'none';
       modelStatus.style.display = 'none';
       setProgress(null);
       updateModelStatus();
@@ -1639,7 +4184,12 @@
     async function downloadTextures() {
       if (!originalArrayBuffer) return;
 
+      resetOptimizeProgress();
+      setOptimizeProgress(0);
       showOptimizeOverlay(true);
+      setOptimizeOverlayMode('progress');
+      setOptimizeStatus('Exporting textures');
+      setOptimizeWarningVisible(false);
       setProgress('Extracting textures...');
 
       try {
@@ -1690,6 +4240,8 @@
           a.click();
           URL.revokeObjectURL(url);
 
+          setOptimizeProgress((i + 1) / textures.length);
+
           await new Promise(r => setTimeout(r, 100)); // Delay between downloads
         }
       } catch (err) {
@@ -1705,16 +4257,24 @@
     }
 
     async function applyUploadedTextures(files) {
-      const sourceBuffer = (isShowingOptimized && optimizedArrayBuffer)
-        ? optimizedArrayBuffer
-        : originalArrayBuffer;
-      if (!sourceBuffer || files.length === 0) return;
+      if (!(originalArrayBuffer || optimizedArrayBuffer) || files.length === 0) return;
+      if (isOrientationEditMode) {
+        const orientationApplied = await applyOrientationEdits();
+        if (!orientationApplied) return;
+      }
 
       showOptimizeOverlay(true);
+      setOptimizeOverlayMode('progress');
+      setOptimizeStatus('Applying texture updates');
       setOptimizeWarningVisible(false);
+      resetOptimizeProgress();
+      setOptimizeProgress(0);
       setProgress('Applying new textures...');
 
       try {
+        await commitPendingScaleToBuffers();
+        const sourceBuffer = originalArrayBuffer || optimizedArrayBuffer;
+        if (!sourceBuffer) throw new Error('No model data available.');
         const readIO = await initReadOnlyIO();
         const gltfDocument = await readIO.readBinary(new Uint8Array(sourceBuffer));
         const root = gltfDocument.getRoot();
@@ -1722,10 +4282,14 @@
         const materials = root.listMaterials();
         const unmatchedFiles = [];
         const textureUsage = getTextureUsageMap(materials);
+        const totalFiles = files.length;
+        let processedFiles = 0;
+        const hadOptimizedVariant = !!optimizedArrayBuffer;
 
         // Match uploaded files to textures by name
         for (const file of files) {
           const fileName = file.name.replace(/\.[^.]+$/, ''); // Remove extension
+          const mimeType = file.type || 'image/png';
           const textureIndex = getTextureIndexFromFilename(file.name);
           const indexedTexture = textureIndex != null ? textures[textureIndex] : null;
           const exactMatches = indexedTexture ? [indexedTexture] : findTexturesForFile(textures, file.name);
@@ -1738,10 +4302,10 @@
             targets.forEach((texture) => {
               if (!texture) return;
               texture.setImage(uint8Array);
-              texture.setMimeType(file.type);
+              texture.setMimeType(mimeType);
             });
             const count = targets.length;
-            setProgress(`Updated texture${count > 1 ? 's' : ''}: ${fileName}`);
+            setProgress(`Updated texture${count > 1 ? 's' : ''}: ${fileName} (${processedFiles + 1}/${totalFiles})`);
 
             const anyUsed = targets.some((texture) => textureUsage.has(texture));
             if (!anyUsed) {
@@ -1780,6 +4344,10 @@
           } else {
             unmatchedFiles.push(file);
           }
+
+          processedFiles++;
+          setOptimizeProgress(Math.min(0.72, (processedFiles / totalFiles) * 0.72));
+          await yieldToBrowser();
         }
 
         // If no matching texture, map intelligently to materials/slots
@@ -1832,6 +4400,11 @@
           }
         }
 
+        setProgress('Checking texture size policy...');
+        setOptimizeProgress(0.78);
+        const resizeCheck = await inspectTextureResizeNeed(root.listTextures());
+        setTextureResizeState(resizeCheck);
+
         // Update KHR_texture_basisu usage based on current texture types
         const hasKtx2 = root.listTextures().some((t) => t.getMimeType() === 'image/ktx2');
         const basisuExt = gltfDocument.getRoot().listExtensionsUsed()
@@ -1851,36 +4424,29 @@
         }
 
         // Write updated model back to originalArrayBuffer
+        setProgress('Writing updated model...');
+        setOptimizeProgress(0.88);
         const updatedGlb = await readIO.writeBinary(gltfDocument);
         const updatedBuffer = updatedGlb.buffer;
-        const wasViewingOptimized = !!(isShowingOptimized && optimizedArrayBuffer);
+        originalArrayBuffer = updatedBuffer;
         hasNewTextures = true;
-
-        if (wasViewingOptimized) {
-          optimizedArrayBuffer = updatedBuffer;
-        } else {
-          originalArrayBuffer = updatedBuffer;
-          if (optimizedArrayBuffer) {
-            optimizedArrayBuffer = null;
-            isShowingOptimized = false;
-            optimiseBtn.style.display = 'block';
-            optimiseBtn.textContent = 'Optimise';
-            optimiseBtn.disabled = false;
-            downloadBtn.style.display = 'none';
-            updateViewToggle();
-          }
+        lastOptimizationSummary = null;
+        if (hadOptimizedVariant || requiresReoptimisation) {
+          optimizedArrayBuffer = null;
+          isShowingOptimized = false;
+          requiresReoptimisation = true;
         }
 
-        updateModelStatus();
-
         // Reload the model
-        const bufferToLoad = wasViewingOptimized ? updatedBuffer : originalArrayBuffer;
-        await loadModelFromArrayBuffer(bufferToLoad, true);
+        setOptimizeProgress(0.94);
+        await loadModelFromArrayBuffer(originalArrayBuffer, true);
+        setOptimizeProgress(1);
 
       } catch (err) {
         console.error('Failed to apply textures:', err);
         alert('Failed to apply textures: ' + err.message);
       } finally {
+        setProgress(null);
         showOptimizeOverlay(false);
       }
     }
@@ -1918,7 +4484,11 @@
       originalFileName = mainFile.name;
 
       // Show loading overlay
+      resetOptimizeProgress();
+      setOptimizeProgress(0);
       showOptimizeOverlay(true);
+      setOptimizeOverlayMode('spinner');
+      setOptimizeStatus('Loading model');
       setOptimizeWarningVisible(false);
       setProgress('Loading model...');
 
@@ -1962,35 +4532,13 @@
         originalArrayBuffer = arrayBuffer;
         lastBlobSize = arrayBuffer.byteLength;
 
-        // Load into viewer
-        const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
-        const url = URL.createObjectURL(blob);
+        // Model buffer is valid even if preview fails.
+        emptyState.style.display = 'none';
+        loadedHint.classList.add('visible');
 
-        try {
-          if (hasModel) {
-            viewer.belowViewer.clearModels();
-          }
-          await viewer.belowViewer.loadModel(url, { autoFrame: true });
-
-          // Hide empty state and show loaded hint
-          emptyState.style.display = 'none';
-          loadedHint.classList.add('visible');
-          hasModel = true;
-
-          // Show action buttons
-          actionButtons.style.display = 'flex';
-          textureButtons.style.display = 'flex';
-
-          updateCameraSnippet();
-
-          // Compute and show stats
-          const modelRoot = viewer.belowViewer.loadedModels?.[0]?.model || viewer.belowViewer.sceneManager.scene;
-          const stats = collectModelStats(modelRoot);
-          updateStatsDisplay(stats);
-          setProgress(null);
-        } finally {
-          URL.revokeObjectURL(url);
-        }
+        await loadModelFromArrayBuffer(arrayBuffer, true);
+        setOptimizeProgress(1);
+        setProgress(null);
       } catch (err) {
         console.error('Failed to load model:', err);
         alert('Failed to load the model: ' + err.message);
@@ -2008,13 +4556,52 @@
 
     // Restore view when returning to the tab
     document.addEventListener('visibilitychange', async () => {
-      if (document.visibilityState === 'visible') {
-        await reloadCurrentView();
+      if (isOptimizing) {
+        if (document.visibilityState === 'visible') {
+          await maybeAcquireWakeLock();
+          if (currentProgressText) setProgress(currentProgressText);
+        }
+        return;
       }
+      if (document.visibilityState === 'visible') {
+        await reloadCurrentView({
+          retries: PREVIEW_RELOAD_RETRY_COUNT,
+          retryDelayMs: PREVIEW_RELOAD_RETRY_DELAY_MS,
+          onlyIfPending: pendingPreviewReload || !hasModel
+        });
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      if (isOptimizing || (!pendingPreviewReload && hasModel)) return;
+      void reloadCurrentView({
+        retries: PREVIEW_RELOAD_RETRY_COUNT,
+        retryDelayMs: PREVIEW_RELOAD_RETRY_DELAY_MS
+      });
+    });
+
+    window.addEventListener('pageshow', () => {
+      if (isOptimizing || (!pendingPreviewReload && hasModel)) return;
+      void reloadCurrentView({
+        retries: PREVIEW_RELOAD_RETRY_COUNT,
+        retryDelayMs: PREVIEW_RELOAD_RETRY_DELAY_MS
+      });
     });
 
     window.addEventListener('dragover', (e) => {
       e.preventDefault();
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (isOptimizing) return;
+      requestAnimationFrame(() => syncScaleMeasurementControls('auto'));
+    });
+
+    window.addEventListener('resize', () => {
+      if (isOrientationEditMode) {
+        refreshOrientationFloor();
+        refreshOrientationGizmo();
+      }
     });
 
     // Hide overlay when dragging away
@@ -2052,13 +4639,15 @@
       }
     });
 
-    // Subscribe to camera changes to keep snippet live-updated
+    // Subscribe to camera changes to keep snippet/gizmo live-updated
     if (viewer?.belowViewer?.on) {
       viewer.belowViewer.on('camera-change', updateCameraSnippet);
+      viewer.belowViewer.on('camera-change', syncOrientationGizmoToCamera);
     }
 
     // Initial update
     updateCameraSnippet();
+    startOrientationCameraSyncLoop();
 
     // Periodically refresh stats (in case textures finish loading later)
     setInterval(() => {

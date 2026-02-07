@@ -3632,7 +3632,16 @@ function ln() {
 }
 class O {
   constructor(e = null) {
-    this.renderer = e, this.isIOSWebKit = O.isIOSWebKit(), this.platformKey = O.getPlatformKey(), this.loader = new xt(), this.dracoLoader = new Lo(), this.ktx2Loader = null, this.loadQueue = Promise.resolve(), this.activeIOSLoad = !1, this.dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/"), this.isIOSWebKit && typeof this.dracoLoader.setWorkerLimit == "function" && this.dracoLoader.setWorkerLimit(1), this.loader.setDRACOLoader(this.dracoLoader), this.loader.setMeshoptDecoder(an), this.cache = /* @__PURE__ */ new Map(), this.ktx2SetupComplete = !1, this.setupKTX2Loader();
+    this.renderer = e, this.isIOSWebKit = O.isIOSWebKit(), this.platformKey = O.getPlatformKey(), this.loader = new xt(), this.dracoLoader = new Lo(), this.ktx2Loader = null, this.loadQueue = Promise.resolve(), this.activeIOSLoad = !1, this.dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/"), this.isIOSWebKit && typeof this.dracoLoader.setWorkerLimit == "function" && this.dracoLoader.setWorkerLimit(1), this.loader.setDRACOLoader(this.dracoLoader), this.loader.setMeshoptDecoder(an), this.loader.register((t) => ({
+      name: "KHR_materials_pbrSpecularGlossiness",
+      extendMaterialParams: async (i, s) => {
+        const o = t.json.materials[i];
+        if (!o.extensions || !o.extensions.KHR_materials_pbrSpecularGlossiness)
+          return Promise.resolve();
+        const n = o.extensions.KHR_materials_pbrSpecularGlossiness;
+        return n.diffuseTexture !== void 0 && (s.map = await t.getDependency("texture", n.diffuseTexture.index)), n.diffuseFactor !== void 0 && (s.color = new g.Color().fromArray(n.diffuseFactor)), n.glossinessFactor !== void 0 && (s.roughness = 1 - n.glossinessFactor), s.metalness = 0, Promise.resolve();
+      }
+    })), this.cache = /* @__PURE__ */ new Map(), this.ktx2SetupComplete = !1, this.setupKTX2Loader();
   }
   setupKTX2Loader() {
     const e = this.platformKey;
@@ -5739,7 +5748,7 @@ class kn {
         (this.scaling || this.rotating) && (this.rotVelocity = 0, this.scaleVelocity = 0), this.dragging = !0, this.scaling = !1, this.rotating = !1, l.getWorldPosition(this.dragStartPos), this.onGestureStart && this.onGestureStart("drag");
       else {
         l.getWorldPosition(this.tempVec1);
-        let h = this.tempVec1.clone().sub(this.dragStartPos);
+        const h = this.tempVec1.clone().sub(this.dragStartPos);
         if (h.length() > this.MAX_DELTA_PER_FRAME && h.normalize().multiplyScalar(this.MAX_DELTA_PER_FRAME), i) {
           const d = i.position.distanceTo(t.position);
           if (d > this.DISTANCE_GAIN_THRESHOLD) {
@@ -6106,12 +6115,14 @@ class _n extends Te {
         default: {
           antialias: !0,
           alpha: !1,
-          powerPreference: "high-performance"
+          powerPreference: "high-performance",
+          logarithmicDepthBuffer: !1
         },
         schema: {
           antialias: { type: "boolean", default: !0 },
           alpha: { type: "boolean", default: !1 },
-          powerPreference: { type: "string", default: "high-performance" }
+          powerPreference: { type: "string", default: "high-performance" },
+          logarithmicDepthBuffer: { type: "boolean", default: !1 }
         }
       },
       stereo: {
@@ -6170,6 +6181,7 @@ class _n extends Te {
       antialias: this.config.renderer.antialias,
       alpha: this.config.renderer.alpha,
       powerPreference: this.config.renderer.powerPreference,
+      logarithmicDepthBuffer: this.config.renderer.logarithmicDepthBuffer,
       preserveDrawingBuffer: !0
     }), this.renderer.setSize(this.container.clientWidth, this.container.clientHeight), this.renderer.setPixelRatio(window.devicePixelRatio), this.renderer.shadowMap.enabled = !0, this.renderer.shadowMap.type = g.PCFSoftShadowMap, this.renderer.outputColorSpace = g.SRGBColorSpace;
     const e = {
@@ -8556,7 +8568,7 @@ class Hn {
   createSurveyModeLights() {
     if (!(this.isDisposed || !this.scene))
       try {
-        this.clearModeDirectionalLight || (this.clearModeDirectionalLight = new g.DirectionalLight(16777215, 1.32), this.clearModeDirectionalLight.position.set(10, 20, 10), this.clearModeDirectionalLight.castShadow = !0, this.clearModeDirectionalLight.shadow.mapSize.width = 2048, this.clearModeDirectionalLight.shadow.mapSize.height = 2048, this.clearModeDirectionalLight.shadow.camera.near = 0.5, this.clearModeDirectionalLight.shadow.camera.far = 100, this.clearModeDirectionalLight.shadow.camera.left = -20, this.clearModeDirectionalLight.shadow.camera.right = 20, this.clearModeDirectionalLight.shadow.camera.top = 20, this.clearModeDirectionalLight.shadow.camera.bottom = -20, this.scene.add(this.clearModeDirectionalLight)), this.clearModeHemisphereLight || (this.clearModeHemisphereLight = new g.HemisphereLight(16777215, 4473924, 0.77), this.scene.add(this.clearModeHemisphereLight)), this.fillLight || (this.fillLight = new g.DirectionalLight(16777215, 0.88), this.fillLight.position.set(-10, 10, -10), this.scene.add(this.fillLight)), this.bottomLight || (this.bottomLight = new g.DirectionalLight(16777215, 0.33), this.bottomLight.position.set(0, -10, 0), this.scene.add(this.bottomLight));
+        this.clearModeDirectionalLight || (this.clearModeDirectionalLight = new g.DirectionalLight(16777215, 1.32), this.clearModeDirectionalLight.position.set(50, 100, 50), this.clearModeDirectionalLight.castShadow = !0, this.clearModeDirectionalLight.shadow.mapSize.width = 2048, this.clearModeDirectionalLight.shadow.mapSize.height = 2048, this.clearModeDirectionalLight.shadow.camera.near = 0.5, this.clearModeDirectionalLight.shadow.camera.far = 500, this.clearModeDirectionalLight.shadow.camera.left = -150, this.clearModeDirectionalLight.shadow.camera.right = 150, this.clearModeDirectionalLight.shadow.camera.top = 150, this.clearModeDirectionalLight.shadow.camera.bottom = -150, this.scene.add(this.clearModeDirectionalLight)), this.clearModeHemisphereLight || (this.clearModeHemisphereLight = new g.HemisphereLight(16777215, 4473924, 0.77), this.scene.add(this.clearModeHemisphereLight)), this.fillLight || (this.fillLight = new g.DirectionalLight(16777215, 0.88), this.fillLight.position.set(-10, 10, -10), this.scene.add(this.fillLight)), this.bottomLight || (this.bottomLight = new g.DirectionalLight(16777215, 0.33), this.bottomLight.position.set(0, -10, 0), this.scene.add(this.bottomLight));
       } catch (e) {
         console.error("Failed to create survey mode lights:", e);
       }
