@@ -1,4 +1,4 @@
-# @belowjs/optimiser
+# belowjs-optimiser
 
 Optimises photogrammetry GLB models for WebXR on Meta Quest by applying:
 
@@ -11,13 +11,13 @@ The original bash script (v1) is kept in `legacy/below-optimiser.sh`.
 ## Install
 
 ```sh
-npm install -g @belowjs/optimiser
+npm install -g belowjs-optimiser
 ```
 
 Or run ad-hoc:
 
 ```sh
-npx @belowjs/optimiser pack model.glb
+npx belowjs-optimiser pack model.glb
 ```
 
 ## Required dependency: KTX-Software
@@ -37,56 +37,58 @@ brew install ktx-software
 Optimise a GLB:
 
 ```sh
-below-optimiser pack model.glb
+belowjs-optimiser pack model.glb
 ```
 
 Optimise many files:
 
 ```sh
-below-optimiser pack models/*.glb
+belowjs-optimiser pack models/*.glb
 ```
 
 Skip simplification:
 
 ```sh
-below-optimiser pack model.glb --no-simplify
+belowjs-optimiser pack model.glb --no-simplify
 ```
 
 Custom polygon target:
 
 ```sh
-below-optimiser pack model.glb --polygon 800000
+belowjs-optimiser pack model.glb --polygon 800000
 ```
 
 Custom output suffix:
 
 ```sh
-below-optimiser pack model.glb --suffix '_ar'
+belowjs-optimiser pack model.glb --suffix '_ar'
 ```
 
 Unpack for texture edits:
 
 ```sh
-below-optimiser unpack model.glb
+belowjs-optimiser unpack model.glb
 # creates model_edit/
 ```
 
 Repack an unpacked directory:
 
 ```sh
-below-optimiser pack model_edit/
+belowjs-optimiser pack model_edit/
 ```
 
 Inspect model stats:
 
 ```sh
-below-optimiser info model.glb
+belowjs-optimiser info model.glb
 ```
+
+`below-optimiser` is still supported as a compatibility alias.
 
 ## Programmatic API
 
 ```js
-import { pack, unpack, inspect } from '@belowjs/optimiser';
+import { pack, unpack, inspect } from 'belowjs-optimiser';
 
 const packed = await pack('model.glb', {
   output: 'model-belowjs.glb',
@@ -133,7 +135,7 @@ Curated 12-model sample (manually selected from the same run):
 | `dunderberg` | 283.2 MB | 17.9 MB | 93.7% | 7,999,999 -> 823,229 |
 
 Full run table is in
-[`test/TESTING_RESULTS.md`](https://github.com/patrickmorrison/below-optimiser/blob/main/test/TESTING_RESULTS.md).
+[`test/TESTING_RESULTS.md`](https://github.com/patrick-morrison/belowjs-optimiser/blob/main/test/TESTING_RESULTS.md).
 
 ## Release checklist
 
@@ -146,7 +148,7 @@ npm run release:check
 ## Documentation
 
 - Project guide: https://belowjs.com/guides/optimisation.html
-- Full benchmark log: https://github.com/patrickmorrison/below-optimiser/blob/main/test/TESTING_RESULTS.md
+- Full benchmark log: https://github.com/patrick-morrison/belowjs-optimiser/blob/main/test/TESTING_RESULTS.md
 
 ## License
 

@@ -267,7 +267,7 @@ export async function pack(inputPath, options = {}) {
   await requireKtxSoftware();
 
   const isDir = statSync(inputPath).isDirectory();
-  const tempDir = pathJoin(tmpdir(), `below-optimiser-${randomUUID()}`);
+  const tempDir = pathJoin(tmpdir(), `belowjs-optimiser-${randomUUID()}`);
   mkdirSync(tempDir, { recursive: true });
 
   try {

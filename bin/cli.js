@@ -25,12 +25,14 @@ function formatNumber(num) {
 }
 
 program
-  .name('below-optimiser')
+  .name('belowjs-optimiser')
   .description('Optimise GLB photogrammetry models for WebXR on Meta Quest')
   .version(VERSION)
   .showHelpAfterError('\nRun with --help for usage and examples.')
   .addHelpText('after', `
 Input notes:
+  - Primary command: belowjs-optimiser
+  - Compatibility alias: below-optimiser
   - pack accepts .glb files, shell globs, or unpacked *_edit directories.
   - unpack writes an editable directory (default: <name>_edit).
   - info inspects a .glb file and prints model stats.
@@ -40,11 +42,11 @@ Requirements:
     Install: https://github.com/KhronosGroup/KTX-Software/releases
 
 Common examples:
-  below-optimiser pack model.glb
-  below-optimiser pack "models/*.glb" --polygon 800000 --suffix "_ar"
-  below-optimiser unpack model.glb
-  below-optimiser pack model_edit/
-  below-optimiser info model.glb
+  belowjs-optimiser pack model.glb
+  belowjs-optimiser pack "models/*.glb" --polygon 800000 --suffix "_ar"
+  belowjs-optimiser unpack model.glb
+  belowjs-optimiser pack model_edit/
+  belowjs-optimiser info model.glb
 
 Docs: https://belowjs.com/guides/optimisation.html
 `);
@@ -57,7 +59,7 @@ const packCommand = program
   .option('--polygon <count>', 'Target polygon count for simplification', '1200000')
   .option('--suffix <suffix>', 'Output suffix for generated GLB', '-belowjs')
   .action(async (inputs, options) => {
-    console.log(chalk.bold(`\nbelow-optimiser v${VERSION}\n`));
+    console.log(chalk.bold(`\nbelowjs-optimiser v${VERSION}\n`));
 
     // Expand globs and validate inputs
     const files = [];
@@ -158,9 +160,9 @@ Behavior:
   - Original input files are not modified.
 
 Examples:
-  below-optimiser pack model.glb
-  below-optimiser pack "models/*.glb" --polygon 800000
-  below-optimiser pack model_edit/ --suffix "_ar"
+  belowjs-optimiser pack model.glb
+  belowjs-optimiser pack "models/*.glb" --polygon 800000
+  belowjs-optimiser pack model_edit/ --suffix "_ar"
 `);
 
 const unpackCommand = program
@@ -169,7 +171,7 @@ const unpackCommand = program
   .argument('<input>', 'GLB file to unpack')
   .argument('[output]', 'Output directory (default: <name>_edit)')
   .action(async (input, output) => {
-    console.log(chalk.bold(`\nbelow-optimiser v${VERSION}\n`));
+    console.log(chalk.bold(`\nbelowjs-optimiser v${VERSION}\n`));
 
     const inputPath = resolve(input);
 
@@ -203,8 +205,8 @@ Behavior:
   - Use "pack" on that directory after texture edits.
 
 Examples:
-  below-optimiser unpack model.glb
-  below-optimiser unpack model.glb model_edit_custom
+  belowjs-optimiser unpack model.glb
+  belowjs-optimiser unpack model.glb model_edit_custom
 `);
 
 const infoCommand = program
@@ -235,7 +237,7 @@ const infoCommand = program
 
 infoCommand.addHelpText('after', `
 Example:
-  below-optimiser info model.glb
+  belowjs-optimiser info model.glb
 `);
 
 program.parse();

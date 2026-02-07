@@ -1,5 +1,5 @@
 /**
- * @belowjs/optimiser - GLB optimization toolkit for Quest
+ * belowjs-optimiser - GLB optimization toolkit for Quest
  *
  * Optimises photogrammetry models for WebXR by applying:
  * - 20-bit Draco mesh compression
@@ -7,7 +7,7 @@
  * - Automatic polygon simplification for models over 1.2M polygons
  *
  * @example
- * import { pack, unpack, inspect } from '@belowjs/optimiser';
+ * import { pack, unpack, inspect } from 'belowjs-optimiser';
  *
  * // Optimise a model
  * await pack('model.glb', {
