@@ -1,70 +1,153 @@
-# below-optimiser
-Optimises photogrammetry models for WebXR by applying 20-bit Draco mesh
-compression and KTX2 texture compression. Reduces file sizes by ~30% and
-GPU memory usage by ~75% for smooth VR performance on Meta Quest
-headsets. For models over 1.2 million polygons, it also simplifies the mesh.
+# @belowjs/optimiser
 
-Tested on macOS and Windows Subsystem for Linux (WSL).
+Optimises photogrammetry GLB models for WebXR on Meta Quest by applying:
 
-See https://belowjs.com/guides/optimisation.html for complete workflow details.
+- Draco mesh compression (20-bit)
+- KTX2 texture compression
+- automatic mesh simplification above polygon limits
 
-## Quick Install
+The original bash script (v1) is kept in `legacy/below-optimiser.sh`.
 
-### Make executable
+## Install
+
 ```sh
-chmod +x below-optimiser
+npm install -g @belowjs/optimiser
 ```
 
-### Install dependencies
+Or run ad-hoc:
+
 ```sh
-npm install -g @gltf-transform/cli
+npx @belowjs/optimiser pack model.glb
 ```
 
-## Usage
+## Required dependency: KTX-Software
 
-### Basic optimisation - creates input-quest.glb
+`ktx` must be available on PATH.
+
 ```sh
-./below-optimiser pack input.glb
+# macOS
+brew install ktx-software
+
+# Windows / Linux
+# https://github.com/KhronosGroup/KTX-Software/releases
 ```
 
-### Unpack for texture editing
+## CLI usage
+
+Optimise a GLB:
+
 ```sh
-./below-optimiser unpack input.glb
+below-optimiser pack model.glb
 ```
 
-### Edit textures in input_edit/ folder
+Optimise many files:
+
 ```sh
-./below-optimiser pack input_edit/
+below-optimiser pack models/*.glb
 ```
 
-### Batch a folder of models
+Skip simplification:
+
 ```sh
-./below-optimiser pack models/*.glb
+below-optimiser pack model.glb --no-simplify
 ```
 
-### Skip polygon reduction
+Custom polygon target:
+
 ```sh
-./below-optimiser pack model.glb --no-simplify
+below-optimiser pack model.glb --polygon 800000
 ```
 
-## Test Results
+Custom output suffix:
 
-Testing performed on 12 shipwreck photogrammetry models from my library, and Sketchfab.
+```sh
+below-optimiser pack model.glb --suffix '_ar'
+```
 
-| Model | Original Polygons | Simplified? | Final Polygons | Original Size | Final Size | Compression | Draw Call Reduction |
-|-------|-------------------|-------------|----------------|---------------|------------|-------------|---------------------|
-| 04 Koz VII | 819,407 | - | 819,407 | 41.51 MB | 41.51 MB | 0% | - |
-| carlingford | 8,000,001 | ✓ | 1,199,992 | 279.21 MB | 27.63 MB | 90.1% | 78→1 |
-| dunderberg | 8,000,000 | ✓ | 1,199,999 | 297.00 MB | 29.74 MB | 90.0% | 82→1 |
-| dutch_submarine | 1,000,001 | - | 1,000,001 | 62.85 MB | 23.75 MB | 62.2% | - |
-| enriquillo | 987,021 | - | 987,021 | 59.06 MB | 24.54 MB | 58.5% | - |
-| flint_shipwreck | 800,002 | - | 800,002 | 102.81 MB | 36.10 MB | 64.9% | - |
-| junee | 10,707,223 | ✓ | 1,199,213 | 261.26 MB | 22.76 MB | 91.3% | 1→1 |
-| new_hope | 1,547,410 | ✓ | 1,199,995 | 67.09 MB | 27.48 MB | 59.0% | 16→1 |
-| providence | 186,314 | - | 186,314 | 31.80 MB | 8.03 MB | 74.8% | - |
-| hopkins_2018 | 4,000,000 | ✓ | 1,199,999 | 141.57 MB | 24.71 MB | 82.5% | 42→1 |
-| hopkins_yr_2 | 3,965,487 | ✓ | 1,199,990 | 185.08 MB | 32.39 MB | 82.5% | 51→1 |
-| jarvenkari | 6,851,347 | ✓ | 1,199,999 | 237.79 MB | 29.85 MB | 87.4% | 66→1 |
-| stalker | 900,009 | - | 900,009 | 238.68 MB | 60.06 MB | 74.8% | - |
-| uunihylky | 9,996,918 | ✓ | 1,199,990 | 365.39 MB | 40.03 MB | 89.0% | 100→1 |
-| trial_1622 | 2,076,711 | ✓ | 1,199,994 | 94.76 MB | 27.16 MB | 71.3% | 20→1 |
+Unpack for texture edits:
+
+```sh
+below-optimiser unpack model.glb
+# creates model_edit/
+```
+
+Repack an unpacked directory:
+
+```sh
+below-optimiser pack model_edit/
+```
+
+Inspect model stats:
+
+```sh
+below-optimiser info model.glb
+```
+
+## Programmatic API
+
+```js
+import { pack, unpack, inspect } from '@belowjs/optimiser';
+
+const packed = await pack('model.glb', {
+  output: 'model-belowjs.glb',
+  targetPolygons: 1200000,
+  simplify: true
+});
+
+const extracted = await unpack('model.glb');
+const stats = await inspect('model.glb');
+
+console.log(packed.outputSize, extracted.textureCount, stats.polygons);
+```
+
+## Real Test Results (From Scratch Run)
+
+The numbers below are from a real run on **February 7, 2026**:
+
+```sh
+rm -rf test/output/* && node test/test-suite.js
+```
+
+Summary:
+
+- Pack pipeline: `23/23` passed
+- Unpack -> Pack: `23/23` passed
+- Re-optimise: `23/23` passed
+- Low-compression edge cases found: `3` models (`0.6%`, `0.7%`, `20.2%`)
+
+Curated 12-model sample (manually selected from the same run):
+
+| Model | Original | Optimised | Compression | Polygons |
+|---|---:|---:|---:|---:|
+| `providence_island_sailing_canal_boat-test` | 7.7 MB | 7.6 MB | 0.6% | 186,311 -> 186,311 |
+| `04 Koz VII` | 39.6 MB | 39.3 MB | 0.7% | 819,403 -> 819,403 |
+| `adrasan copy` | 91.9 MB | 73.3 MB | 20.2% | 1,200,000 -> 1,200,000 |
+| `blackwall_reach_barge` | 36.2 MB | 14.8 MB | 59.2% | 564,587 -> 564,587 |
+| `new_hope_shipwreck_bow_section_15445_version_3.0` | 64.0 MB | 26.2 MB | 59.0% | 1,547,406 -> 1,199,996 |
+| `trial_1622_wreck_site_2021` | 90.4 MB | 25.9 MB | 71.3% | 2,076,707 -> 1,199,984 |
+| `shipwreck_hopkins_2018` | 135.0 MB | 24.2 MB | 82.1% | 3,999,999 -> 1,199,993 |
+| `test-junee-quest` | 163.7 MB | 21.4 MB | 86.9% | 10,707,222 -> 1,199,816 |
+| `shipwreck_jarvenkari_haapasaaret` | 226.8 MB | 29.2 MB | 87.1% | 6,851,343 -> 1,199,971 |
+| `shipwreck_uunihylky_-_varmbadan_kirkkonummi` | 348.5 MB | 33.0 MB | 90.5% | 9,996,908 -> 821,982 |
+| `junee` | 249.2 MB | 17.9 MB | 92.8% | 10,707,222 -> 1,199,822 |
+| `dunderberg` | 283.2 MB | 17.9 MB | 93.7% | 7,999,999 -> 823,229 |
+
+Full run table is in
+[`test/TESTING_RESULTS.md`](https://github.com/patrickmorrison/below-optimiser/blob/main/test/TESTING_RESULTS.md).
+
+## Release checklist
+
+```sh
+npm test
+npm run test:help
+npm run release:check
+```
+
+## Documentation
+
+- Project guide: https://belowjs.com/guides/optimisation.html
+- Full benchmark log: https://github.com/patrickmorrison/below-optimiser/blob/main/test/TESTING_RESULTS.md
+
+## License
+
+GPL-3.0

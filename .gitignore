@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Test files (large GLB models)
+test/models/
+test/output/
+
+# Build artifacts
+dist/
+out/
+build/
+
+# Logs
+*.log
+npm-debug.log
+yarn-error.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Temp files
+*.tmp
+*-temp.glb
