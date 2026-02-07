@@ -13,7 +13,7 @@
     {
         "imports": {
             "three": "https://esm.sh/three@0.170.0",
-            "belowjs": "./belowjs.js",
+            "belowjs": "./browser/belowjs.js",
             "@gltf-transform/core": "https://esm.sh/@gltf-transform/core@4",
             "@gltf-transform/extensions": "https://esm.sh/@gltf-transform/extensions@4",
             "@gltf-transform/functions": "https://esm.sh/@gltf-transform/functions@4",
@@ -31,7 +31,7 @@
   <!-- Load Draco decoder (browser build) -->
   <script src="https://unpkg.com/draco3dgltf@1.5.7/draco_decoder_gltf_nodejs.js"></script>
 
-  <link rel="stylesheet" href="./belowjs.css">
+  <link rel="stylesheet" href="./browser/belowjs.css">
 
   <style>
     body,
@@ -422,6 +422,15 @@
       text-align: center;
       line-height: 1.5;
     }
+
+    .optimize-overlay .warning a {
+      color: #93c5fd;
+      text-decoration: underline;
+    }
+
+    .optimize-overlay .warning a:hover {
+      color: #bfdbfe;
+    }
   </style>
 </head>
 
@@ -467,7 +476,12 @@
   <div class="optimize-overlay" id="optimizeOverlay">
     <div class="spinner"></div>
     <div class="step" id="optimizeStep">Initialising...</div>
-    <div class="warning" id="optimizeWarning">This may take 1-2 minutes for large models.<br>Please don't close the tab.
+    <div class="warning" id="optimizeWarning">
+      Experimental: browser optimisation can crash on large models due to browser memory limits.<br>
+      Keep this tab focussed while optimising.<br>
+      For a faster, more robust experience, use the CLI on
+      <a href="https://github.com/patrick-morrison/below-optimiser" target="_blank"
+        rel="noopener noreferrer">GitHub</a>.
     </div>
   </div>
 
@@ -1210,7 +1224,7 @@
       optimiseBtn.textContent = 'Optimising...';
       showOptimizeOverlay(true);
       setOptimizeWarningVisible(true);
-      setProgress('Preparing optimization...');
+      setProgress('Preparing optimisation...');
       await new Promise(requestAnimationFrame);
       await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -1228,8 +1242,8 @@
         updateModelStatus();
 
       } catch (err) {
-        console.error('Optimization failed:', err);
-        alert('Optimization failed: ' + err.message);
+        console.error('Optimisation failed:', err);
+        alert('Optimisation failed: ' + err.message);
         optimiseBtn.textContent = 'Optimise';
         optimiseBtn.disabled = false;
         showStatusMessage(`Optimisation failed: ${err.message}`, true);
