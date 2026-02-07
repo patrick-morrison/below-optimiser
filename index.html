@@ -84,7 +84,7 @@
       text-align: center;
       color: #e2e8f0;
       z-index: 1000;
-      pointer-events: none;
+      pointer-events: auto;
     }
 
     .empty-state h2 {
@@ -111,6 +111,7 @@
       cursor: pointer;
       pointer-events: auto;
       transition: background 0.3s ease;
+      user-select: none;
     }
 
     .file-select-button:hover {
@@ -118,7 +119,16 @@
     }
 
     #fileInput {
-      display: none;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      border: 0;
+      white-space: nowrap;
     }
 
     /* Loaded state hint */
@@ -421,13 +431,11 @@
       max-width: 300px;
       text-align: center;
       line-height: 1.5;
-      pointer-events: auto;
     }
 
     .optimize-overlay .warning a {
       color: #93c5fd;
       text-decoration: underline;
-      pointer-events: auto;
       cursor: pointer;
     }
 
@@ -466,7 +474,7 @@
   <div class="empty-state" id="emptyState">
     <h2>Below Optimiser</h2>
     <p>Drag & drop a .glb or .gltf file</p>
-    <button class="file-select-button" onclick="document.getElementById('fileInput').click()">Choose files</button>
+    <label class="file-select-button" id="chooseFilesBtn" for="fileInput" role="button" tabindex="0">Choose files</label>
     <input type="file" id="fileInput" accept=".glb,.gltf,.bin,.png,.jpg,.jpeg,.webp" multiple />
   </div>
 
@@ -579,6 +587,7 @@
     const downloadTexturesBtn = document.getElementById('downloadTexturesBtn');
     const uploadTexturesBtn = document.getElementById('uploadTexturesBtn');
     const textureInput = document.getElementById('textureInput');
+    const chooseFilesBtn = document.getElementById('chooseFilesBtn');
     const progressText = document.getElementById('progressText');
     const statusMessageText = document.getElementById('statusMessageText');
     const viewToggle = document.getElementById('viewToggle');
@@ -990,6 +999,28 @@
       });
     }
 
+    function startProgressTicker(getLabel, intervalMs = 1000) {
+      let timerId = null;
+      let stopped = false;
+      const startedAt = performance.now();
+
+      const tick = () => {
+        if (stopped) return;
+        const elapsedSec = Math.max(0, Math.floor((performance.now() - startedAt) / 1000));
+        setProgress(getLabel(elapsedSec));
+        timerId = setTimeout(tick, intervalMs);
+      };
+
+      tick();
+
+      return () => {
+        stopped = true;
+        if (timerId != null) {
+          clearTimeout(timerId);
+        }
+      };
+    }
+
     function initKtx2Decoder() {
       if (ktx2Loader) return ktx2Loader;
 
@@ -1191,6 +1222,7 @@
             wasmUrl: 'https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.wasm?v=20260127',
             jsUrl: 'https://unpkg.com/ktx2-encoder@0.5.1/dist/basis/basis_encoder.js?v=20260127'
           }),
+          ticker: (elapsedSec) => `Converting textures to KTX2/ETC1S... (${ktx2Candidates.length} texture${ktx2Candidates.length === 1 ? '' : 's'}, ${elapsedSec}s elapsed)`,
           postCheck: () => {
             const failed = ktx2Candidates.filter((t) => t.getMimeType() !== 'image/ktx2');
             if (failed.length > 0) {
@@ -1216,17 +1248,32 @@
       });
 
       // Apply transforms sequentially to show accurate progress
-      for (const step of transforms) {
-        setProgress(step.label);
+      for (let stepIndex = 0; stepIndex < transforms.length; stepIndex++) {
+        const step = transforms[stepIndex];
+        const stepPrefix = `Step ${stepIndex + 1}/${transforms.length}`;
+        const stepLabel = `${stepPrefix}: ${step.label}`;
+        setProgress(stepLabel);
         await new Promise(requestAnimationFrame);
-        if (step.timeoutMs) {
-          await withTimeout(gltfDocument.transform(step.transform), step.timeoutMs, step.label);
-        } else {
-          await gltfDocument.transform(step.transform);
+        let stopTicker = null;
+        try {
+          if (step.ticker) {
+            stopTicker = startProgressTicker((elapsedSec) => `${stepPrefix}: ${step.ticker(elapsedSec)}`);
+          }
+          if (step.timeoutMs) {
+            await withTimeout(gltfDocument.transform(step.transform), step.timeoutMs, step.label);
+          } else {
+            await gltfDocument.transform(step.transform);
+          }
+        } finally {
+          if (stopTicker) {
+            stopTicker();
+          }
         }
         if (step.postCheck) {
           step.postCheck();
         }
+        // Yield between heavy steps so the tab can process input/repaint.
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
 
       // Write to GLB
@@ -1574,7 +1621,14 @@
 
     // Copy is handled via the button
 
-    // Handle file input selection
+    // Keyboard support for the custom file label button.
+    chooseFilesBtn.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+
     fileInput.addEventListener('change', async (e) => {
       if (e.target.files.length > 0) {
         await loadModelFile(e.target.files);
