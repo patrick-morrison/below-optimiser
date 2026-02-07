@@ -1,6 +1,6 @@
 {
   "name": "@belowjs/optimiser",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Optimises photogrammetry GLB models for WebXR on Meta Quest headsets. Applies Draco mesh compression, KTX2 texture compression, and automatic polygon simplification.",
   "type": "module",
   "main": "./src/index.js",
