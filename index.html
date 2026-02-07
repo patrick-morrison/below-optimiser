@@ -421,15 +421,32 @@
       max-width: 300px;
       text-align: center;
       line-height: 1.5;
+      pointer-events: auto;
     }
 
     .optimize-overlay .warning a {
       color: #93c5fd;
       text-decoration: underline;
+      pointer-events: auto;
+      cursor: pointer;
     }
 
     .optimize-overlay .warning a:hover {
       color: #bfdbfe;
+    }
+
+    .model-stats .cli-hint {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .model-stats .cli-hint a {
+      color: #93c5fd;
+      text-decoration: underline;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -504,6 +521,10 @@
       <button class="action-btn secondary" id="uploadTexturesBtn" style="font-size: 11px; padding: 6px 10px;">↑
         Textures</button>
       <input type="file" id="textureInput" accept="image/*" multiple style="display: none;">
+    </div>
+    <div class="cli-hint">
+      Large model? Use the CLI:
+      <a href="https://github.com/patrick-morrison/below-optimiser" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
     <div class="progress-text" id="progressText" style="display: none;"></div>
     <div class="status-note" id="modelStatus" style="display: none;">
