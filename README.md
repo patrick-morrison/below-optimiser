@@ -22,6 +22,12 @@ Or run ad-hoc:
 npx belowjs-optimiser pack model.glb
 ```
 
+## Experimental browser option
+
+You can also try the browser-based optimiser (experimental):
+
+https://patrick-morrison.github.io/belowjs-optimiser/
+
 ## Required dependency: KTX-Software
 
 `ktx` must be available on PATH.
