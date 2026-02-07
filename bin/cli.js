@@ -26,16 +26,36 @@ function formatNumber(num) {
 
 program
   .name('below-optimiser')
-  .description('Optimise GLB models for WebXR on Meta Quest headsets')
-  .version(VERSION);
+  .description('Optimise GLB photogrammetry models for WebXR on Meta Quest')
+  .version(VERSION)
+  .showHelpAfterError('\nRun with --help for usage and examples.')
+  .addHelpText('after', `
+Input notes:
+  - pack accepts .glb files, shell globs, or unpacked *_edit directories.
+  - unpack writes an editable directory (default: <name>_edit).
+  - info inspects a .glb file and prints model stats.
 
-program
+Requirements:
+  - KTX-Software must be installed and "ktx" available on PATH for "pack".
+    Install: https://github.com/KhronosGroup/KTX-Software/releases
+
+Common examples:
+  below-optimiser pack model.glb
+  below-optimiser pack "models/*.glb" --polygon 800000 --suffix "_ar"
+  below-optimiser unpack model.glb
+  below-optimiser pack model_edit/
+  below-optimiser info model.glb
+
+Docs: https://belowjs.com/guides/optimisation.html
+`);
+
+const packCommand = program
   .command('pack')
-  .description('Optimise GLB files for Quest (Draco + KTX2 compression)')
-  .argument('<input...>', 'GLB files or directories to optimise')
+  .description('Optimise GLB files or unpacked directories')
+  .argument('<input...>', '.glb file(s), glob(s), or *_edit directory path(s)')
   .option('--no-simplify', 'Skip automatic polygon reduction')
-  .option('--polygon <count>', 'Target polygon count', '1200000')
-  .option('--suffix <suffix>', 'Output file suffix', '-belowjs')
+  .option('--polygon <count>', 'Target polygon count for simplification', '1200000')
+  .option('--suffix <suffix>', 'Output suffix for generated GLB', '-belowjs')
   .action(async (inputs, options) => {
     console.log(chalk.bold(`\nbelow-optimiser v${VERSION}\n`));
 
@@ -129,9 +149,23 @@ program
     console.log('');
   });
 
-program
+packCommand.addHelpText('after', `
+Behavior:
+  - For .glb input, output is written beside the source file.
+  - For directory input, directory must contain <base>.gltf (for example: ship_edit/ship.gltf).
+  - Output name is <basename><suffix>.glb (for example: model-belowjs.glb).
+  - Simplification runs only when polygons exceed --polygon, unless --no-simplify is used.
+  - Original input files are not modified.
+
+Examples:
+  below-optimiser pack model.glb
+  below-optimiser pack "models/*.glb" --polygon 800000
+  below-optimiser pack model_edit/ --suffix "_ar"
+`);
+
+const unpackCommand = program
   .command('unpack')
-  .description('Extract textures from GLB for editing')
+  .description('Extract editable GLTF + textures from a GLB')
   .argument('<input>', 'GLB file to unpack')
   .argument('[output]', 'Output directory (default: <name>_edit)')
   .action(async (input, output) => {
@@ -162,9 +196,20 @@ program
     console.log('');
   });
 
-program
+unpackCommand.addHelpText('after', `
+Behavior:
+  - Creates an editable folder with .gltf and external texture files.
+  - If output directory exists, a unique directory name is used.
+  - Use "pack" on that directory after texture edits.
+
+Examples:
+  below-optimiser unpack model.glb
+  below-optimiser unpack model.glb model_edit_custom
+`);
+
+const infoCommand = program
   .command('info')
-  .description('Show model information')
+  .description('Show polygon/material/texture/file-size stats for a GLB')
   .argument('<input>', 'GLB file to inspect')
   .action(async (input) => {
     const inputPath = resolve(input);
@@ -187,5 +232,10 @@ program
       process.exit(1);
     }
   });
+
+infoCommand.addHelpText('after', `
+Example:
+  below-optimiser info model.glb
+`);
 
 program.parse();
